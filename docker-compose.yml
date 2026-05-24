@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
 
   sqlserver:
@@ -12,6 +10,9 @@ services:
 
     ports:
       - "1433:1433"
+
+    volumes:
+      - sqlserver-data:/var/opt/mssql
 
     networks:
       - planoria-network
@@ -29,10 +30,14 @@ services:
 
     environment:
       ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=PlanoriaDatabase;User Id=sa;Password=Planoria123*;TrustServerCertificate=True;"
-      GEMINI_API_KEY: "${GEMINI_API_KEY}"
+      GEMINI_API_KEY: "${PLANORIA_GEMINI_KEY}"
+      Gemini__Model: "gemini-2.5-flash"
 
     networks:
       - planoria-network
+
+volumes:
+  sqlserver-data:
 
 networks:
   planoria-network:

@@ -83,15 +83,14 @@ namespace PlanoriaCapstone.Bll.Service
                 var flashcardsCompletadas =
                     await _context
                         .HistorialFlashcards
-                        .CountAsync(hf =>
+                        .Where(hf =>
                             hf.IdUsuario == idUsuario
-                            && _context.Flashcards
-                                .Any(f =>
-                                    f.IdFlashcard
-                                        == hf.IdFlashcard
-                                    && f.IdAnalisis
-                                        == flashcard
-                                            .IdAnalisis));
+                            && hf.Flashcard != null
+                            && hf.Flashcard.IdAnalisis
+                                == flashcard.IdAnalisis)
+                        .Select(hf => hf.IdFlashcard)
+                        .Distinct()
+                        .CountAsync();
 
                 await _progresoService
                     .ActualizarProgresoAsync(
@@ -124,6 +123,29 @@ namespace PlanoriaCapstone.Bll.Service
                             f.VecesEstudiada
                     })
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<bool> VerificarAccesoAnalisisAsync(
+            int idAnalisis,
+            int idUsuario)
+        {
+            return await _context.AnalisisIA
+                .AnyAsync(a =>
+                    a.IdAnalisis == idAnalisis
+                    && a.ArchivoSubido != null
+                    && a.ArchivoSubido.IdUsuario == idUsuario);
+        }
+
+        public async Task<bool> VerificarAccesoFlashcardAsync(
+            int idFlashcard,
+            int idUsuario)
+        {
+            return await _context.Flashcards
+                .AnyAsync(f =>
+                    f.IdFlashcard == idFlashcard
+                    && f.AnalisisIA != null
+                    && f.AnalisisIA.ArchivoSubido != null
+                    && f.AnalisisIA.ArchivoSubido.IdUsuario == idUsuario);
         }
     }
 }

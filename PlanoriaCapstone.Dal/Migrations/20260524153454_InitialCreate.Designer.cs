@@ -12,7 +12,7 @@ using PlanoriaCapstone.Dal;
 namespace PlanoriaCapstone.Dal.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260520070225_InitialCreate")]
+    [Migration("20260524153454_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

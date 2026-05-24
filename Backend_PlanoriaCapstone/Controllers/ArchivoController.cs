@@ -1,8 +1,8 @@
+using Backend_PlanoriaCapstone.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlanoriaCapstone.Bll.Interface;
 using PlanoriaCapstone.Dal.Interface;
-using System.Security.Claims;
 
 namespace Backend_PlanoriaCapstone.Controllers
 {
@@ -13,13 +13,16 @@ namespace Backend_PlanoriaCapstone.Controllers
     {
         private readonly IArchivoService _archivoService;
         private readonly IArchivoRepository _archivoRepository;
+        private readonly ILogger<ArchivoController> _logger;
 
         public ArchivoController(
             IArchivoService archivoService,
-            IArchivoRepository archivoRepository)
+            IArchivoRepository archivoRepository,
+            ILogger<ArchivoController> logger)
         {
             _archivoService = archivoService;
             _archivoRepository = archivoRepository;
+            _logger = logger;
         }
 
         // GET api/archivo
@@ -27,7 +30,7 @@ namespace Backend_PlanoriaCapstone.Controllers
         [HttpGet]
         public async Task<IActionResult> ObtenerMisArchivos()
         {
-            var userId = ObtenerUserId();
+            var userId = User.ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
 
             var archivos = await _archivoService.ObtenerArchivosUsuarioAsync(userId.Value);
@@ -39,7 +42,7 @@ namespace Backend_PlanoriaCapstone.Controllers
         [HttpGet("{id:int}")]
         public async Task<IActionResult> ObtenerPorId(int id)
         {
-            var userId = ObtenerUserId();
+            var userId = User.ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
 
             var archivo = await _archivoRepository.ObtenerPorIdAsync(id);
@@ -55,11 +58,16 @@ namespace Backend_PlanoriaCapstone.Controllers
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> SubirArchivo(IFormFile archivo)
         {
-            var userId = ObtenerUserId();
+            _logger.LogInformation("=== SubirArchivo INICIO: FileName={FileName}, Length={Length}", archivo?.FileName, archivo?.Length);
+
+            var userId = User.ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
 
             if (archivo == null || archivo.Length == 0)
                 return BadRequest("Por favor seleccione un archivo válido.");
+
+            if (archivo.Length > 10 * 1024 * 1024)
+                return BadRequest("El archivo no puede superar los 10 MB.");
 
             var extension = Path.GetExtension(archivo.FileName).ToLower();
             if (extension != ".pdf" && extension != ".txt")
@@ -67,12 +75,15 @@ namespace Backend_PlanoriaCapstone.Controllers
 
             try
             {
+                _logger.LogInformation("Llamando a SubirArchivoAsync...");
                 var nuevoArchivo = await _archivoService.SubirArchivoAsync(userId.Value, archivo);
+                _logger.LogInformation("SubirArchivoAsync OK, Id={Id}", nuevoArchivo.IdArchivo);
                 return CreatedAtAction(nameof(ObtenerPorId), new { id = nuevoArchivo.IdArchivo }, nuevoArchivo);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error al procesar el archivo: {ex.Message}");
+                _logger.LogError(ex, "Error al procesar archivo {FileName} del usuario {UserId}", archivo.FileName, userId);
+                return StatusCode(500, "Error al procesar el archivo. Intente nuevamente más tarde.");
             }
         }
 
@@ -81,7 +92,7 @@ namespace Backend_PlanoriaCapstone.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> EliminarArchivo(int id)
         {
-            var userId = ObtenerUserId();
+            var userId = User.ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
 
             try
@@ -90,17 +101,10 @@ namespace Backend_PlanoriaCapstone.Controllers
                 if (!eliminado) return NotFound("Archivo no encontrado.");
                 return NoContent();
             }
-            catch (Exception ex) when (ex.Message == "No autorizado")
+            catch (UnauthorizedAccessException)
             {
                 return Forbid();
             }
-        }
-
-        // ─── Helper ────────────────────────────────────────────────────────────
-        private int? ObtenerUserId()
-        {
-            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.TryParse(claim, out var id) ? id : null;
         }
     }
 }

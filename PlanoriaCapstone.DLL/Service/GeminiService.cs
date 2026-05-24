@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using PlanoriaCapstone.Bll.Interface;
 using PlanoriaCapstone.DTOs.Archivo;
 using System.Net.Http.Headers;
@@ -11,21 +12,28 @@ namespace PlanoriaCapstone.Bll.Service
     {
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
+        private readonly string _model;
+        private readonly ILogger<GeminiService> _logger;
 
-        public GeminiService(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public GeminiService(IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<GeminiService> logger)
         {
             _httpClient = httpClientFactory.CreateClient();
+            _logger = logger;
 
             _apiKey = !string.IsNullOrWhiteSpace(configuration["Gemini:ApiKey"])
                 ? configuration["Gemini:ApiKey"]!
                 : Environment.GetEnvironmentVariable("GEMINI_API_KEY")
                   ?? throw new ArgumentNullException(
                       "Gemini API Key no configurada.");
+
+            _model = !string.IsNullOrWhiteSpace(configuration["Gemini:Model"])
+                ? configuration["Gemini:Model"]!
+                : "gemini-2.5-flash"; // Default to gemini-2.5-flash which is efficient and active
         }
 
         public async Task<AnalisisDocumentoDto> AnalizarTextoAsync(string texto)
         {
-            var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent";
 
             var prompt = $@"
 Eres un sistema educativo avanzado. Analiza el texto proporcionado y genera un resumen, temas clave, 5 flashcards y 5 preguntas de quiz en JSON válido. NO incluyas caracteres especiales ni marcas de código, solo JSON puro.
@@ -77,12 +85,14 @@ Texto a analizar:
 
             if (!response.IsSuccessStatusCode)
             {
+                _logger.LogError("Gemini API error: {StatusCode} - {Response}", response.StatusCode, json);
                 throw new Exception($"Error de Gemini API ({response.StatusCode}): {json}");
             }
 
             using var doc = JsonDocument.Parse(json);
             if (!doc.RootElement.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
             {
+                _logger.LogWarning("Gemini returned no candidates. Response: {Response}", json);
                 throw new Exception("La IA no devolvió ninguna respuesta válida.");
             }
 
@@ -113,8 +123,9 @@ Texto a analizar:
                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
                        ) ?? new AnalisisDocumentoDto();
             }
-            catch (JsonException)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error al deserializar respuesta de Gemini. Raw: {RawResponse}", raw);
                 return new AnalisisDocumentoDto
                 {
                     Resumen = "No se pudo analizar el documento. Intente con un archivo más pequeño o diferente.",

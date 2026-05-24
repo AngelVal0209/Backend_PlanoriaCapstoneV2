@@ -17,5 +17,13 @@ namespace PlanoriaCapstone.Bll.Interface
             int incorrectas,
             decimal puntaje,
             int tiempoResolucionMinutos);
+
+        Task<bool> VerificarAccesoArchivoAsync(
+            int idArchivo,
+            int idUsuario);
+
+        Task<bool> VerificarAccesoQuizAsync(
+            int idQuiz,
+            int idUsuario);
     }
 }

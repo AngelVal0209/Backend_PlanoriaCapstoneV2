@@ -97,6 +97,13 @@ namespace PlanoriaCapstone.Bll.Service
             if (usuario == null)
                 return false;
 
+            // Check for duplicate email (excluding current user)
+            var existente = await _usuarioRepository
+                .ObtenerPorCorreoAsync(correo);
+
+            if (existente != null && existente.IdUsuario != idUsuario)
+                return false;
+
             usuario.Nombre = nombre;
             usuario.Apellido = apellido;
             usuario.Correo = correo;
