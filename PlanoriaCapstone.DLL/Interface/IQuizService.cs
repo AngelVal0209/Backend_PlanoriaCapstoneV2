@@ -1,18 +1,13 @@
-﻿using PlanoriaCapstone.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using PlanoriaCapstone.DTOs.Quiz;
 
 namespace PlanoriaCapstone.Bll.Interface
 {
     public interface IQuizService
     {
-        Task<IEnumerable<Quiz>> ObtenerPorArchivoAsync(
+        Task<List<QuizResponseDTO>> ObtenerPorArchivoAsync(
             int idArchivo);
 
-        Task<Quiz?> ObtenerPorIdAsync(
+        Task<QuizResponseDTO?> ObtenerPorIdAsync(
             int idQuiz);
 
         Task<bool> ResolverQuizAsync(

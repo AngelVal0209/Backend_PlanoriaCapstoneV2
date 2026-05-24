@@ -16,19 +16,31 @@ namespace PlanoriaCapstone.Bll.Service
         {
             _httpClient = httpClientFactory.CreateClient();
 
-            _apiKey = configuration["Gemini:ApiKey"]
-          ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY")
-          ?? throw new ArgumentNullException(
-              "Gemini API Key no configurada.");
+            _apiKey = !string.IsNullOrWhiteSpace(configuration["Gemini:ApiKey"])
+                ? configuration["Gemini:ApiKey"]!
+                : Environment.GetEnvironmentVariable("GEMINI_API_KEY")
+                  ?? throw new ArgumentNullException(
+                      "Gemini API Key no configurada.");
         }
 
         public async Task<AnalisisDocumentoDto> AnalizarTextoAsync(string texto)
         {
-            // URL estable de Gemini
-            var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
+            var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
             var prompt = $@"
-Eres un sistema educativo avanzado. Analiza el texto proporcionado y genera un resumen, temas clave, flashcards y un quiz en JSON válido.
+Eres un sistema educativo avanzado. Analiza el texto proporcionado y genera un resumen, temas clave, 5 flashcards y 5 preguntas de quiz en JSON válido. NO incluyas caracteres especiales ni marcas de código, solo JSON puro.
+
+Formato JSON requerido:
+{{
+  ""resumen"": ""texto"",
+  ""temasDetectados"": [""tema1"", ""tema2""],
+  ""flashcards"": [
+    {{ ""pregunta"": ""pregunta"", ""respuesta"": ""respuesta"" }}
+  ],
+  ""quizzes"": [
+    {{ ""pregunta"": ""pregunta"", ""opciones"": [""a"", ""b"", ""c"", ""d""], ""respuestaCorrecta"": ""a"", ""explicacion"": ""texto"" }}
+  ]
+}}
 
 Texto a analizar:
 {texto}";
@@ -44,6 +56,11 @@ Texto a analizar:
                             new { text = prompt }
                         }
                     }
+                },
+                generationConfig = new
+                {
+                    temperature = 0.2,
+                    maxOutputTokens = 8192
                 }
             };
 
@@ -76,12 +93,36 @@ Texto a analizar:
                 .GetString();
 
             if (!string.IsNullOrEmpty(raw))
+            {
                 raw = raw.Replace("```json", "").Replace("```", "").Trim();
 
-            return JsonSerializer.Deserialize<AnalisisDocumentoDto>(
-                       raw!,
-                       new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-                   ) ?? new AnalisisDocumentoDto();
+                // Remove invalid control characters and BOM
+                raw = System.Text.RegularExpressions.Regex.Replace(raw, @"[\u0000-\u001F\u0080-\u009F]", "");
+
+                // Try to find JSON object in the response
+                var start = raw.IndexOf('{');
+                var end = raw.LastIndexOf('}');
+                if (start >= 0 && end > start)
+                    raw = raw.Substring(start, end - start + 1);
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<AnalisisDocumentoDto>(
+                           raw!,
+                           new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                       ) ?? new AnalisisDocumentoDto();
+            }
+            catch (JsonException)
+            {
+                return new AnalisisDocumentoDto
+                {
+                    Resumen = "No se pudo analizar el documento. Intente con un archivo más pequeño o diferente.",
+                    TemasDetectados = new List<string>(),
+                    Flashcards = new List<FlashcardDto>(),
+                    Quizzes = new List<QuizDto>()
+                };
+            }
         }
     }
 }

@@ -1,12 +1,8 @@
-﻿using PlanoriaCapstone.Bll.Interface;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using PlanoriaCapstone.Bll.Interface;
 using PlanoriaCapstone.Dal;
+using PlanoriaCapstone.DTOs.Quiz;
 using PlanoriaCapstone.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PlanoriaCapstone.Bll.Service
 {
@@ -23,25 +19,62 @@ namespace PlanoriaCapstone.Bll.Service
             _progresoService = progresoService;
         }
 
-        public async Task<IEnumerable<Quiz>> ObtenerPorArchivoAsync(
+        public async Task<List<QuizResponseDTO>> ObtenerPorArchivoAsync(
             int idArchivo)
         {
             return await _context.Quizzes
-                .Include(q => q.PreguntasQuiz)
-                .Include(q => q.AnalisisIA)
                 .Where(q =>
                     q.AnalisisIA != null &&
                     q.AnalisisIA.IdArchivo == idArchivo)
+                .Select(q => new QuizResponseDTO
+                {
+                    IdQuiz = q.IdQuiz,
+                    Titulo = q.Titulo,
+                    Descripcion = q.Descripcion,
+                    FechaCreacion = q.FechaCreacion,
+                    IdAnalisis = q.IdAnalisis,
+                    Preguntas = q.PreguntasQuiz!
+                        .Select(p => new PreguntaQuizDTO
+                        {
+                            IdPreguntaQuiz =
+                                p.IdPreguntaQuiz,
+                            Pregunta = p.Pregunta,
+                            OpcionA = p.OpcionA,
+                            OpcionB = p.OpcionB,
+                            OpcionC = p.OpcionC,
+                            OpcionD = p.OpcionD
+                        })
+                        .ToList()
+                })
                 .ToListAsync();
         }
 
-        public async Task<Quiz?> ObtenerPorIdAsync(
+        public async Task<QuizResponseDTO?> ObtenerPorIdAsync(
             int idQuiz)
         {
             return await _context.Quizzes
-                .Include(q => q.PreguntasQuiz)
-                .FirstOrDefaultAsync(q =>
-                    q.IdQuiz == idQuiz);
+                .Where(q => q.IdQuiz == idQuiz)
+                .Select(q => new QuizResponseDTO
+                {
+                    IdQuiz = q.IdQuiz,
+                    Titulo = q.Titulo,
+                    Descripcion = q.Descripcion,
+                    FechaCreacion = q.FechaCreacion,
+                    IdAnalisis = q.IdAnalisis,
+                    Preguntas = q.PreguntasQuiz!
+                        .Select(p => new PreguntaQuizDTO
+                        {
+                            IdPreguntaQuiz =
+                                p.IdPreguntaQuiz,
+                            Pregunta = p.Pregunta,
+                            OpcionA = p.OpcionA,
+                            OpcionB = p.OpcionB,
+                            OpcionC = p.OpcionC,
+                            OpcionD = p.OpcionD
+                        })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<bool> ResolverQuizAsync(
@@ -76,7 +109,6 @@ namespace PlanoriaCapstone.Bll.Service
 
             await _context.SaveChangesAsync();
 
-            // ACTUALIZAR PROGRESO
             if (quiz.AnalisisIA != null)
             {
                 var quizzesCompletados =
@@ -84,7 +116,8 @@ namespace PlanoriaCapstone.Bll.Service
                         .CountAsync(hq =>
                             hq.IdUsuario == idUsuario &&
                             hq.Quiz != null &&
-                            hq.Quiz.IdAnalisis == quiz.IdAnalisis);
+                            hq.Quiz.IdAnalisis ==
+                                quiz.IdAnalisis);
 
                 await _progresoService
                     .ActualizarProgresoAsync(

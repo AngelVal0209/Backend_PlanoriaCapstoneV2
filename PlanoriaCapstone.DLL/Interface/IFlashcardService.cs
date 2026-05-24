@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using PlanoriaCapstone.Models;
+﻿using PlanoriaCapstone.DTOs.Flashcard;
 
 namespace PlanoriaCapstone.Bll.Interface
 {
     public interface IFlashcardService
     {
-        Task<IEnumerable<Flashcard>>
+        Task<List<FlashcardResponseDTO>>
             ObtenerPorArchivoAsync(
                 int idAnalisis);
 
@@ -20,7 +15,7 @@ namespace PlanoriaCapstone.Bll.Interface
                 bool correcta,
                 int tiempoRespuestaSegundos);
 
-        Task<Flashcard?>
+        Task<FlashcardResponseDTO?>
             ObtenerPorIdAsync(
                 int idFlashcard);
     }

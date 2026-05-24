@@ -10,6 +10,8 @@ namespace PlanoriaCapstone.DTOs.Quiz
     {
         public int IdQuiz { get; set; }
 
+        public int IdAnalisis { get; set; }
+
         public string Titulo { get; set; } = string.Empty;
 
         public string? Descripcion { get; set; }
