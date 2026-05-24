@@ -132,6 +132,25 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// AUTO-MIGRATE (with retry for SQL Server startup)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    for (int i = 0; i < 10; i++)
+    {
+        try
+        {
+            db.Database.Migrate();
+            break;
+        }
+        catch
+        {
+            if (i == 9) throw;
+            Thread.Sleep(3000);
+        }
+    }
+}
+
 // SWAGGER
 app.UseSwagger();
 

@@ -18,6 +18,18 @@ namespace Backend_PlanoriaCapstone.Controllers
             _progresoService = progresoService;
         }
 
+        // GET api/progreso/resumen
+        // Returns a dashboard summary for the authenticated user
+        [HttpGet("resumen")]
+        public async Task<IActionResult> ObtenerResumen()
+        {
+            var userId = ObtenerUserId();
+            if (userId == null) return Unauthorized("Token inválido.");
+
+            var resumen = await _progresoService.ObtenerResumenAsync(userId.Value);
+            return Ok(resumen);
+        }
+
         // GET api/progreso
         // Returns the complete progress summary for all files of the authenticated user
         [HttpGet]

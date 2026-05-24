@@ -1,43 +1,26 @@
-﻿using PlanoriaCapstone.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using PlanoriaCapstone.DTOs.Progreso;
 
 namespace PlanoriaCapstone.Bll.Interface
 {
     public interface IProgresoService
     {
-        // =========================================
-        // OBTENER PROGRESO POR ARCHIVO
-        // =========================================
-
-        Task<ProgresoArchivo>
+        Task<ProgresoResponseDTO?>
             ObtenerProgresoAsync(
                 int idUsuario,
                 int idArchivo);
 
-        // =========================================
-        // OBTENER TODOS LOS PROGRESOS
-        // =========================================
-
-        Task<List<ProgresoArchivo>>
+        Task<List<ProgresoResponseDTO>>
             ObtenerTodosUsuarioAsync(
                 int idUsuario);
 
-        // =========================================
-        // PROMEDIO QUIZZES
-        // =========================================
+        Task<ProgresoResumenDTO>
+            ObtenerResumenAsync(
+                int idUsuario);
 
         Task<decimal>
             ObtenerPromedioQuizAsync(
                 int idUsuario,
                 int idArchivo);
-
-        // =========================================
-        // ACTUALIZAR PROGRESO
-        // =========================================
 
         Task ActualizarProgresoAsync(
             int idUsuario,
