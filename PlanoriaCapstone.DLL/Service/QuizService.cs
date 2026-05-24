@@ -79,18 +79,19 @@ namespace PlanoriaCapstone.Bll.Service
             // ACTUALIZAR PROGRESO
             if (quiz.AnalisisIA != null)
             {
-                var totalQuizzes =
-                    await _context.Quizzes
-                        .CountAsync(q =>
-                            q.IdAnalisis ==
-                            quiz.IdAnalisis);
+                var quizzesCompletados =
+                    await _context.HistorialQuizzes
+                        .CountAsync(hq =>
+                            hq.IdUsuario == idUsuario &&
+                            hq.Quiz != null &&
+                            hq.Quiz.IdAnalisis == quiz.IdAnalisis);
 
                 await _progresoService
                     .ActualizarProgresoAsync(
                         idUsuario,
                         quiz.AnalisisIA.IdArchivo,
                         0,
-                        totalQuizzes);
+                        quizzesCompletados);
             }
 
             return true;

@@ -54,7 +54,18 @@ namespace PlanoriaCapstone.Dal.Repository
             if (flashcard == null)
                 return false;
 
-            // Aquí puedes guardar historial después
+            var historial = new HistorialFlashcard
+            {
+                IdUsuario = idUsuario,
+                IdFlashcard = idFlashcard,
+                Correcta = correcta,
+                TiempoRespuestaSegundos = tiempoRespuestaSegundos,
+                FechaRespuesta = DateTime.UtcNow
+            };
+
+            _context.HistorialFlashcards.Add(historial);
+
+            flashcard.VecesEstudiada++;
 
             await _context.SaveChangesAsync();
 
