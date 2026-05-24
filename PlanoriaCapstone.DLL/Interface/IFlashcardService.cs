@@ -18,5 +18,13 @@ namespace PlanoriaCapstone.Bll.Interface
         Task<FlashcardResponseDTO?>
             ObtenerPorIdAsync(
                 int idFlashcard);
+
+        Task<bool> VerificarAccesoAnalisisAsync(
+            int idAnalisis,
+            int idUsuario);
+
+        Task<bool> VerificarAccesoFlashcardAsync(
+            int idFlashcard,
+            int idUsuario);
     }
 }

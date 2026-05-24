@@ -481,4 +481,14 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-.env
+# Local development script containing credentials
+run_api.bat
+
+# Runtime log files and process IDs
+api_err.txt
+api_out.txt
+dotnet_pid.txt
+
+# User upload directory files (keep folder, ignore files)
+Backend_PlanoriaCapstone/wwwroot/assets/uploads/*
+!Backend_PlanoriaCapstone/wwwroot/assets/uploads/.gitkeep

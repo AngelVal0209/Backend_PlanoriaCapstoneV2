@@ -45,23 +45,21 @@ namespace PlanoriaCapstone.Bll.Service
                         PorcentajeProgreso =
                             p.PorcentajeProgreso,
                         Completado = p.Completado,
-                        UltimaSesion = p.UltimaSesion
+                        UltimaSesion = p.UltimaSesion,
+                        PromedioPuntaje =
+                            _context.HistorialQuizzes
+                                .Where(h =>
+                                    h.IdUsuario == idUsuario
+                                    && h.Quiz!.AnalisisIA!
+                                        .IdArchivo == idArchivo)
+                                .Average(h =>
+                                    (decimal?)h.Puntaje)
+                            ?? 0
                     })
                 .FirstOrDefaultAsync();
 
             if (progreso != null)
-            {
-                progreso.PromedioPuntaje =
-                    await _context.HistorialQuizzes
-                        .Where(h =>
-                            h.IdUsuario == idUsuario
-                            && h.Quiz!.AnalisisIA!
-                                .IdArchivo == idArchivo)
-                        .AverageAsync(h =>
-                            (decimal?)h.Puntaje)
-                        ?? 0;
                 return progreso;
-            }
 
             // AUTO-CREATE if not exists
             var totalFlashcards =
@@ -139,23 +137,19 @@ namespace PlanoriaCapstone.Bll.Service
                         PorcentajeProgreso =
                             p.PorcentajeProgreso,
                         Completado = p.Completado,
-                        UltimaSesion = p.UltimaSesion
+                        UltimaSesion = p.UltimaSesion,
+                        PromedioPuntaje =
+                            _context.HistorialQuizzes
+                                .Where(h =>
+                                    h.IdUsuario == idUsuario
+                                    && h.Quiz!.AnalisisIA!
+                                        .IdArchivo
+                                        == p.IdArchivo)
+                                .Average(h =>
+                                    (decimal?)h.Puntaje)
+                            ?? 0
                     })
                 .ToListAsync();
-
-            foreach (var p in progresos)
-            {
-                p.PromedioPuntaje =
-                    await _context.HistorialQuizzes
-                        .Where(h =>
-                            h.IdUsuario == idUsuario
-                            && h.Quiz!.AnalisisIA!
-                                .IdArchivo
-                                == p.IdArchivo)
-                        .AverageAsync(h =>
-                            (decimal?)h.Puntaje)
-                        ?? 0;
-            }
 
             return progresos;
         }
@@ -164,32 +158,32 @@ namespace PlanoriaCapstone.Bll.Service
             ObtenerResumenAsync(
                 int idUsuario)
         {
-            var progresos = await _context
-                .ProgresoArchivos
-                .Where(p =>
-                    p.IdUsuario == idUsuario)
-                .ToListAsync();
+            var totalArchivos =
+                await _context.ProgresoArchivos
+                    .CountAsync(p =>
+                        p.IdUsuario == idUsuario);
 
-            var idsArchivo = progresos
-                .Select(p => p.IdArchivo)
-                .ToList();
+            var totalCompletados =
+                await _context.ProgresoArchivos
+                    .CountAsync(p =>
+                        p.IdUsuario == idUsuario
+                        && p.Completado);
 
             var promedioGeneral =
                 await _context.HistorialQuizzes
                     .Where(h =>
                         h.IdUsuario == idUsuario
-                        && idsArchivo.Contains(
-                            h.Quiz!.AnalisisIA!
-                                .IdArchivo))
+                        && h.Quiz!.AnalisisIA!
+                            .ArchivoSubido!.IdUsuario
+                            == idUsuario)
                     .AverageAsync(h =>
                         (decimal?)h.Puntaje)
                     ?? 0;
 
             return new ProgresoResumenDTO
             {
-                TotalArchivos = progresos.Count,
-                TotalCompletados = progresos
-                    .Count(p => p.Completado),
+                TotalArchivos = totalArchivos,
+                TotalCompletados = totalCompletados,
                 PromedioGeneral =
                     Math.Round(promedioGeneral, 2)
             };

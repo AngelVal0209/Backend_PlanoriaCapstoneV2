@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using PlanoriaCapstone.Bll.Interface;
 using PlanoriaCapstone.Dal;
 using PlanoriaCapstone.Dal.Interface;
@@ -17,17 +18,20 @@ namespace PlanoriaCapstone.Bll.Service
         private readonly IArchivoRepository _archivoRepository;
         private readonly IIAService _iaService;
         private readonly AppDbContext _context;
+        private readonly ILogger<ArchivoService> _logger;
 
         public ArchivoService(
             IWebHostEnvironment environment,
             IArchivoRepository archivoRepository,
             IIAService iaService,
-            AppDbContext context)
+            AppDbContext context,
+            ILogger<ArchivoService> logger)
         {
             _environment = environment;
             _archivoRepository = archivoRepository;
             _iaService = iaService;
             _context = context;
+            _logger = logger;
         }
 
         public async Task<ArchivoSubido> SubirArchivoAsync(int idUsuario, IFormFile archivo)
@@ -58,16 +62,24 @@ namespace PlanoriaCapstone.Bll.Service
             else if (extension == ".pdf")
             {
                 var sb = new StringBuilder();
-                using (var pdfReader = new PdfReader(ruta))
-                using (var pdfDocument = new PdfDocument(pdfReader))
+                try
                 {
-                    for (int i = 1; i <= pdfDocument.GetNumberOfPages(); i++)
+                    using (var pdfReader = new PdfReader(ruta))
+                    using (var pdfDocument = new PdfDocument(pdfReader))
                     {
-                        var page = pdfDocument.GetPage(i);
-                        sb.AppendLine(PdfTextExtractor.GetTextFromPage(page));
+                        for (int i = 1; i <= pdfDocument.GetNumberOfPages(); i++)
+                        {
+                            var page = pdfDocument.GetPage(i);
+                            sb.AppendLine(PdfTextExtractor.GetTextFromPage(page));
+                        }
                     }
+                    texto = sb.ToString();
                 }
-                texto = sb.ToString();
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error al extraer texto del PDF {FileName}", archivo.FileName);
+                    throw new Exception($"No se pudo extraer texto del PDF. Asegúrate de que no sea un PDF escaneado o protegido.", ex);
+                }
             }
             else
             {
@@ -75,6 +87,13 @@ namespace PlanoriaCapstone.Bll.Service
             }
 
             // 2. IA GEMINI
+            const int MaxCaracteres = 12000;
+            if (texto.Length > MaxCaracteres)
+            {
+                _logger.LogWarning("Texto del archivo truncado de {Original} a {Max} caracteres para Gemini.", texto.Length, MaxCaracteres);
+                texto = texto.Substring(0, MaxCaracteres);
+            }
+
             var analisis = await _iaService.AnalizarTextoAsync(texto);
 
             // 3. GUARDAR ARCHIVO EN TRANSACCIÓN
@@ -163,7 +182,6 @@ namespace PlanoriaCapstone.Bll.Service
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                // Si la base de datos falla, podemos limpiar el archivo guardado en el disco
                 if (File.Exists(ruta))
                 {
                     File.Delete(ruta);
@@ -185,9 +203,8 @@ namespace PlanoriaCapstone.Bll.Service
             if (archivo == null) return false;
 
             if (archivo.IdUsuario != idUsuario)
-                throw new Exception("No autorizado");
+                throw new UnauthorizedAccessException("No tienes permiso para eliminar este archivo.");
 
-            // SOFT DELETE
             archivo.Estado = "ELIMINADO";
             await _archivoRepository.ActualizarAsync(archivo);
             await _archivoRepository.GuardarCambiosAsync();

@@ -37,9 +37,6 @@ builder.Services.AddHttpClient();
 // REPOSITORIES
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IArchivoRepository, ArchivoRepository>();
-builder.Services.AddScoped<IFlashcardRepository, FlashcardRepository>();
-builder.Services.AddScoped<IQuizRepository, QuizRepository>();
-builder.Services.AddScoped<IProgresoRepository, ProgresoRepository>();
 
 // CONTROLLERS
 builder.Services.AddControllers()

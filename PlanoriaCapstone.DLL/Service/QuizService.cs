@@ -113,11 +113,14 @@ namespace PlanoriaCapstone.Bll.Service
             {
                 var quizzesCompletados =
                     await _context.HistorialQuizzes
-                        .CountAsync(hq =>
+                        .Where(hq =>
                             hq.IdUsuario == idUsuario &&
                             hq.Quiz != null &&
                             hq.Quiz.IdAnalisis ==
-                                quiz.IdAnalisis);
+                                quiz.IdAnalisis)
+                        .Select(hq => hq.IdQuiz)
+                        .Distinct()
+                        .CountAsync();
 
                 await _progresoService
                     .ActualizarProgresoAsync(
@@ -128,6 +131,28 @@ namespace PlanoriaCapstone.Bll.Service
             }
 
             return true;
+        }
+
+        public async Task<bool> VerificarAccesoArchivoAsync(
+            int idArchivo,
+            int idUsuario)
+        {
+            return await _context.ArchivosSubidos
+                .AnyAsync(a =>
+                    a.IdArchivo == idArchivo
+                    && a.IdUsuario == idUsuario);
+        }
+
+        public async Task<bool> VerificarAccesoQuizAsync(
+            int idQuiz,
+            int idUsuario)
+        {
+            return await _context.Quizzes
+                .AnyAsync(q =>
+                    q.IdQuiz == idQuiz
+                    && q.AnalisisIA != null
+                    && q.AnalisisIA.ArchivoSubido != null
+                    && q.AnalisisIA.ArchivoSubido.IdUsuario == idUsuario);
         }
     }
 }

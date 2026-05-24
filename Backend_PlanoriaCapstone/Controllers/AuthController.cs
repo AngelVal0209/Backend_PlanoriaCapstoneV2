@@ -1,10 +1,11 @@
+using Backend_PlanoriaCapstone.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlanoriaCapstone.Bll.Interface;
 using PlanoriaCapstone.Dal.Interface;
 using PlanoriaCapstone.DTOs.Auth;
+using PlanoriaCapstone.DTOs.Response;
 using PlanoriaCapstone.Models;
-using System.Security.Claims;
 
 namespace Backend_PlanoriaCapstone.Controllers
 {
@@ -82,7 +83,7 @@ namespace Backend_PlanoriaCapstone.Controllers
                 Apellido = dto.Apellido,
                 Correo = dto.Correo,
 
-                // RAW password
+                // RAW password (will be hashed by UsuarioService.RegistrarAsync)
                 PasswordHash = dto.Password
                     ?? throw new ArgumentException("La contraseña es requerida."),
 
@@ -114,20 +115,23 @@ namespace Backend_PlanoriaCapstone.Controllers
         [Authorize]
         public async Task<IActionResult> Me()
         {
-            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (idClaim == null) return Unauthorized();
+            var userId = User.ObtenerUserId();
+            if (userId == null) return Unauthorized();
 
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(int.Parse(idClaim));
+            var usuario = await _usuarioRepository.ObtenerPorIdAsync(userId.Value);
             if (usuario == null) return NotFound();
 
-            return Ok(new
+            return Ok(new UsuarioResponseDTO
             {
-                usuario.IdUsuario,
-                usuario.Nombre,
-                usuario.Apellido,
-                usuario.Correo,
-                usuario.FotoPerfilUrl,
-                Rol = usuario.IdRol == 1 ? "ADMIN" : "USER"
+                IdUsuario = usuario.IdUsuario,
+                Nombre = usuario.Nombre,
+                Apellido = usuario.Apellido,
+                Correo = usuario.Correo,
+                FotoPerfilUrl = usuario.FotoPerfilUrl,
+                Provider = usuario.Provider ?? "LOCAL",
+                RachaDias = usuario.RachaDias,
+                Puntos = usuario.Puntos,
+                Nivel = usuario.Nivel
             });
         }
     }
