@@ -41,33 +41,33 @@ Authorization: Bearer {token}
 ## 📚 Endpoints principales
 
 📄 Archivos
-- GET /api/Archivo/{id} → Obtener archivo
-
+- GET /api/Archivo/{id} → Obtener archivo por ID
+  
 🧠 Flashcards
-- GET /api/Flashcards?idAnalisis={id}
-- GET /api/Flashcards/todos
-- GET /api/Flashcards/{id}
-- POST /api/Flashcards
-- POST /api/Flashcards/responder
+- GET /api/Flashcards?idAnalisis={id} → Obtener flashcards por análisis
+- GET /api/Flashcards/todos → Listar todas las flashcards
+- GET /api/Flashcards/{id} → Obtener flashcard por ID
+- POST /api/Flashcards → Crear flashcard
+- POST /api/Flashcards/responder → Registrar respuesta de flashcard
   
 🧪 Quizzes
-- GET /api/Quiz/todos
-- GET /api/Quiz?idArchivo={id}
-- GET /api/Quiz/{id}
-- POST /api/Quiz/{id}/resolver
+- GET /api/Quiz/todos → Listar todos los quizzes
+- GET /api/Quiz?idArchivo={id} → Obtener quizzes por archivo
+- GET /api/Quiz/{id} → Obtener quiz por ID
+- POST /api/Quiz/{id}/resolver → Resolver quiz
   
 📊 Progreso
-- GET /api/Progreso
-- GET /api/Progreso/{idArchivo}
-- GET /api/Progreso/{idArchivo}/promedio
+- GET /api/Progreso → Obtener progreso general del usuario
+- GET /api/Progreso/{idArchivo} → Progreso por archivo
+- GET /api/Progreso/{idArchivo}/promedio → Promedio de quiz por archivo
   
 📈 Progreso Flashcards
-- GET /api/ProgresoFlashcard
-- GET /api/ProgresoFlashcard/{idFlashcard}
+- GET /api/ProgresoFlashcard → Listar progreso de flashcards
+- GET /api/ProgresoFlashcard/{idFlashcard} → Progreso por flashcard
   
 📊 Progreso Quiz
-- GET /api/ProgresoQuiz
-- GET /api/ProgresoQuiz/{idQuiz}
+- GET /api/ProgresoQuiz → Listar progreso de quizzes
+- GET /api/ProgresoQuiz/{idQuiz} → Progreso por quiz
 
 ## Tecnologías usadas
 - ASP.NET Core 8
