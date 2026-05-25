@@ -34,11 +34,9 @@ El proyecto sigue una arquitectura en capas:
 
 La API utiliza **JWT Bearer Token**.
 
-Todas las peticiones deben incluir:
+Todas las peticiones deben incluir: Authorization: Bearer {token}
 
-```http
-Authorization: Bearer {token}
-📚 Endpoints principales
+## 📚 Endpoints principales
 📄 Archivos
 GET /api/Archivo/{id} → Obtener archivo
 
@@ -68,18 +66,19 @@ GET /api/ProgresoFlashcard/{idFlashcard}
 GET /api/ProgresoQuiz
 GET /api/ProgresoQuiz/{idQuiz}
 
-📦 Tecnologías usadas
+## 📦 Tecnologías usadas
 ASP.NET Core 8
 Entity Framework Core
 SQL Server
 JWT Authentication
 Swagger / OpenAPI
 
-⚙️ Instalación local
+## ⚙️ Instalación local
 git clone https://github.com/tuusuario/planoria-capstone.git
 cd planoria-capstone
 dotnet restore
 dotnet run
-🐳 Ejecución con Docker (opcional)
+
+## 🐳 Ejecución con Docker (opcional)
 docker build -t planoria-api .
 docker run -p 8080:80 planoria-api
