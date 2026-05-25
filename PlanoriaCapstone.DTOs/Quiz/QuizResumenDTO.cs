@@ -1,6 +1,6 @@
 ﻿namespace PlanoriaCapstone.DTOs.Quiz
 {
-    public class QuizResponseDTO
+    public class QuizResumenDTO
     {
         public int IdQuiz { get; set; }
 
@@ -11,7 +11,6 @@
 
         public DateTime FechaCreacion { get; set; }
 
-        public List<PreguntaQuizDTO> Preguntas
-        { get; set; } = new();
+        public int TotalPreguntas { get; set; }
     }
 }

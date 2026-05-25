@@ -17,7 +17,20 @@ namespace Backend_PlanoriaCapstone.Controllers
         {
             _flashcardService = flashcardService;
         }
+        // GET api/flashcards/todos
+        // Returns all flashcards available in the system
+        [HttpGet("todos")]
+        public async Task<IActionResult> ObtenerTodos()
+        {
+            var flashcards =
+                await _flashcardService.ObtenerTodosAsync();
 
+            return Ok(new
+            {
+                success = true,
+                data = flashcards
+            });
+        }
         // GET api/flashcards?idAnalisis=5
         // Returns all flashcards generated for a given analysis/archivo
         [HttpGet]
@@ -37,9 +50,44 @@ namespace Backend_PlanoriaCapstone.Controllers
         public async Task<IActionResult> ObtenerPorId(int id)
         {
             var flashcard = await _flashcardService.ObtenerPorIdAsync(id);
-            if (flashcard == null) return NotFound("Flashcard no encontrada.");
+
+            if (flashcard == null)
+                return NotFound("Flashcard no encontrada.");
 
             return Ok(flashcard);
+        }
+
+        // POST api/flashcards
+        // Creates a manual flashcard linked to an analysis
+        [HttpPost]
+        public async Task<IActionResult> Crear(
+            [FromBody] CrearFlashcardDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var flashcard =
+                    await _flashcardService.CrearManualAsync(dto);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Flashcard creada correctamente.",
+                    data = flashcard
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    500,
+                    new
+                    {
+                        success = false,
+                        message = ex.Message
+                    });
+            }
         }
 
         // POST api/flashcards/responder
@@ -47,10 +95,13 @@ namespace Backend_PlanoriaCapstone.Controllers
         [HttpPost("responder")]
         public async Task<IActionResult> Responder([FromBody] ResponderFlashcardDTO dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var userId = ObtenerUserId();
-            if (userId == null) return Unauthorized("Token inválido.");
+
+            if (userId == null)
+                return Unauthorized("Token inválido.");
 
             var resultado = await _flashcardService.ResponderAsync(
                 userId.Value,
@@ -61,7 +112,11 @@ namespace Backend_PlanoriaCapstone.Controllers
             if (!resultado)
                 return BadRequest("No se pudo registrar la respuesta.");
 
-            return Ok(new { success = true, mensaje = "Flashcard respondida correctamente." });
+            return Ok(new
+            {
+                success = true,
+                mensaje = "Flashcard respondida correctamente."
+            });
         }
 
         // ─── Helper ────────────────────────────────────────────────────────────

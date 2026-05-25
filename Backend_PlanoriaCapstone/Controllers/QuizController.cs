@@ -17,29 +17,57 @@ namespace Backend_PlanoriaCapstone.Controllers
         {
             _quizService = quizService;
         }
+        // GET api/quiz/todos
+        // Returns all quizzes summaries
+        [HttpGet("todos")]
+        public async Task<IActionResult> ObtenerTodos()
+        {
+            var quizzes =
+                await _quizService.ObtenerTodosAsync();
 
+            return Ok(new
+            {
+                success = true,
+                data = quizzes
+            });
+        }
         // GET api/quiz?idArchivo=5
         // Returns all quizzes generated for a given archivo
         [HttpGet]
-        public async Task<IActionResult> ObtenerPorArchivo([FromQuery] int idArchivo)
+        public async Task<IActionResult> ObtenerPorArchivo(
+            [FromQuery] int idArchivo)
         {
-            var quizzes = await _quizService.ObtenerPorArchivoAsync(idArchivo);
+            var quizzes =
+                await _quizService.ObtenerPorArchivoAsync(idArchivo);
 
             if (quizzes == null || !quizzes.Any())
-                return NotFound("No se encontraron quizzes para este archivo.");
+            {
+                return NotFound(
+                    "No se encontraron quizzes.");
+            }
 
-            return Ok(quizzes);
+            return Ok(new
+            {
+                success = true,
+                data = quizzes
+            });
         }
-
         // GET api/quiz/{id}
         // Returns a specific quiz with its questions
         [HttpGet("{id:int}")]
         public async Task<IActionResult> ObtenerPorId(int id)
         {
-            var quiz = await _quizService.ObtenerPorIdAsync(id);
-            if (quiz == null) return NotFound("Quiz no encontrado.");
+            var quiz =
+                await _quizService.ObtenerPorIdAsync(id);
 
-            return Ok(quiz);
+            if (quiz == null)
+                return NotFound("Quiz no encontrado.");
+
+            return Ok(new
+            {
+                success = true,
+                data = quiz
+            });
         }
 
         // POST api/quiz/{id}/resolver

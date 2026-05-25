@@ -30,7 +30,7 @@ namespace PlanoriaCapstone.Bll.Service
             _context = context;
         }
 
-        public async Task<ArchivoSubido> SubirArchivoAsync(int idUsuario, IFormFile archivo)
+        public async Task<ArchivoSubido> SubirArchivoAsync(int idUsuario, int? idCurso, int cantidadFlashcards, int cantidadPreguntas,IFormFile archivo)
         {
             if (archivo == null || archivo.Length == 0)
                 throw new Exception("Archivo inválido");
@@ -75,7 +75,14 @@ namespace PlanoriaCapstone.Bll.Service
             }
 
             // 2. IA GEMINI
-            var analisis = await _iaService.AnalizarTextoAsync(texto);
+
+            cantidadFlashcards = Math.Clamp(cantidadFlashcards, 1, 50);
+            cantidadPreguntas = Math.Clamp(cantidadPreguntas, 1, 30);
+
+            var analisis = await _iaService.AnalizarTextoAsync(
+                texto,
+                cantidadFlashcards,
+                cantidadPreguntas);
 
             // 3. GUARDAR ARCHIVO EN TRANSACCIÓN
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -84,6 +91,7 @@ namespace PlanoriaCapstone.Bll.Service
                 var nuevoArchivo = new ArchivoSubido
                 {
                     IdUsuario = idUsuario,
+                    IdCursos = idCurso,
                     NombreArchivo = archivo.FileName,
                     UrlArchivo = $"/assets/uploads/{nombreUnico}",
                     TipoArchivo = extension,

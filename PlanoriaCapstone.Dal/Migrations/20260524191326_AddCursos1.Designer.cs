@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PlanoriaCapstone.Dal;
 
@@ -11,9 +12,11 @@ using PlanoriaCapstone.Dal;
 namespace PlanoriaCapstone.Dal.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260524191326_AddCursos1")]
+    partial class AddCursos1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -412,67 +415,6 @@ namespace PlanoriaCapstone.Dal.Migrations
                     b.ToTable("ProgresoArchivos");
                 });
 
-            modelBuilder.Entity("PlanoriaCapstone.Models.ProgresoFlashcard", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Completado")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("IdFlashcard")
-                        .HasColumnType("int");
-
-                    b.Property<int>("IdUsuario")
-                        .HasColumnType("int");
-
-                    b.Property<int>("VecesRepasada")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdFlashcard");
-
-                    b.HasIndex("IdUsuario");
-
-                    b.ToTable("ProgresoFlashcards");
-                });
-
-            modelBuilder.Entity("PlanoriaCapstone.Models.ProgresoQuiz", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<bool>("Completado")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("FechaRealizacion")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("IdQuiz")
-                        .HasColumnType("int");
-
-                    b.Property<int>("IdUsuario")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Puntaje")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdQuiz");
-
-                    b.HasIndex("IdUsuario");
-
-                    b.ToTable("ProgresoQuizzes");
-                });
-
             modelBuilder.Entity("PlanoriaCapstone.Models.Quiz", b =>
                 {
                     b.Property<int>("IdQuiz")
@@ -772,44 +714,6 @@ namespace PlanoriaCapstone.Dal.Migrations
                         .IsRequired();
 
                     b.Navigation("ArchivoSubido");
-
-                    b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("PlanoriaCapstone.Models.ProgresoFlashcard", b =>
-                {
-                    b.HasOne("PlanoriaCapstone.Models.Flashcard", "Flashcard")
-                        .WithMany()
-                        .HasForeignKey("IdFlashcard")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PlanoriaCapstone.Models.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("IdUsuario")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Flashcard");
-
-                    b.Navigation("Usuario");
-                });
-
-            modelBuilder.Entity("PlanoriaCapstone.Models.ProgresoQuiz", b =>
-                {
-                    b.HasOne("PlanoriaCapstone.Models.Quiz", "Quiz")
-                        .WithMany()
-                        .HasForeignKey("IdQuiz")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PlanoriaCapstone.Models.Usuario", "Usuario")
-                        .WithMany()
-                        .HasForeignKey("IdUsuario")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Quiz");
 
                     b.Navigation("Usuario");
                 });

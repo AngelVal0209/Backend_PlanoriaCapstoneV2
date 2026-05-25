@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace PlanoriaCapstone.DTOs.Quiz
 {
     public class ResolverQuizDTO
@@ -13,11 +7,11 @@ namespace PlanoriaCapstone.DTOs.Quiz
         public int IdQuiz { get; set; }
 
         public int Correctas { get; set; }
-        
+
         public int Incorrectas { get; set; }
-        
+
         public decimal Puntaje { get; set; }
-        
+
         public int TiempoMinutos { get; set; }
 
         public List<RespuestaPreguntaDTO> Respuestas

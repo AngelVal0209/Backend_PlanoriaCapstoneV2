@@ -52,6 +52,7 @@ builder.Services.AddControllers()
             JsonIgnoreCondition.WhenWritingNull;
     });
 
+// SWAGGER
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
@@ -132,18 +133,29 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// SWAGGER
-app.UseSwagger();
-
-app.UseSwaggerUI(c =>
+// SWAGGER SOLO EN DESARROLLO
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint(
-        "/swagger/v1/swagger.json",
-        "Planoria API v1");
-});
+    app.UseSwagger();
 
-// HTTPS
-app.UseHttpsRedirection();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint(
+            "/swagger/v1/swagger.json",
+            "Planoria API v1");
+    });
+}
+
+// IMPORTANTE:
+// EN DOCKER NORMALMENTE NO USARÁS HTTPS
+if (!app.Environment.IsDevelopment())
+{
+    // Producción/Docker
+}
+else
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseStaticFiles();
 

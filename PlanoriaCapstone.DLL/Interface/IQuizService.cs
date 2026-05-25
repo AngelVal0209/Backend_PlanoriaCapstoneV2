@@ -1,19 +1,33 @@
-﻿using PlanoriaCapstone.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using PlanoriaCapstone.DTOs.Quiz;
 
 namespace PlanoriaCapstone.Bll.Interface
 {
     public interface IQuizService
     {
-        Task<IEnumerable<Quiz>> ObtenerPorArchivoAsync(
-            int idArchivo);
+        // =====================================
+        // GET ALL QUIZZES
+        // =====================================
 
-        Task<Quiz?> ObtenerPorIdAsync(
-            int idQuiz);
+        Task<IEnumerable<QuizResumenDTO>>
+            ObtenerTodosAsync();
+
+        // =====================================
+        // GET QUIZZES BY ARCHIVO
+        // =====================================
+
+        Task<IEnumerable<QuizResponseDTO>>
+            ObtenerPorArchivoAsync(int idArchivo);
+
+        // =====================================
+        // GET QUIZ BY ID
+        // =====================================
+
+        Task<QuizResponseDTO?>
+            ObtenerPorIdAsync(int idQuiz);
+
+        // =====================================
+        // RESOLVER QUIZ
+        // =====================================
 
         Task<bool> ResolverQuizAsync(
             int idUsuario,
@@ -21,6 +35,6 @@ namespace PlanoriaCapstone.Bll.Interface
             int correctas,
             int incorrectas,
             decimal puntaje,
-            int tiempoResolucionMinutos);
+            int tiempoMinutos);
     }
 }

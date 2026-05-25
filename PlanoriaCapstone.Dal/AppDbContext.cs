@@ -28,6 +28,10 @@ namespace PlanoriaCapstone.Dal
 
         public DbSet<Quiz> Quizzes { get; set; }
 
+        public DbSet<ProgresoFlashcard> ProgresoFlashcards { get; set; }
+
+        public DbSet<ProgresoQuiz> ProgresoQuizzes { get; set; }
+
         public DbSet<PreguntaQuiz> PreguntasQuiz { get; set; }
 
         public DbSet<HistorialFlashcard> HistorialFlashcards { get; set; }
@@ -41,6 +45,9 @@ namespace PlanoriaCapstone.Dal
         public DbSet<EstadisticaIA> EstadisticasIA { get; set; }
 
         public DbSet<Auditoria> Auditorias { get; set; }
+
+        public DbSet<Curso> Cursos { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -127,7 +134,7 @@ namespace PlanoriaCapstone.Dal
             // =========================================
 
             modelBuilder.Entity<ArchivoSubido>()
-                .HasKey(a => a.IdArchivo);
+    .HasKey(a => a.IdArchivo);
 
             modelBuilder.Entity<ArchivoSubido>()
                 .Property(a => a.NombreArchivo)
@@ -153,11 +160,19 @@ namespace PlanoriaCapstone.Dal
                 .Property(a => a.TamanoMB)
                 .HasPrecision(10, 2);
 
+            // Relación Archivo -> Usuario
             modelBuilder.Entity<ArchivoSubido>()
                 .HasOne(a => a.Usuario)
                 .WithMany(u => u.ArchivosSubidos)
                 .HasForeignKey(a => a.IdUsuario)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Relación Archivo -> Curso
+            modelBuilder.Entity<ArchivoSubido>()
+                .HasOne(a => a.Curso)
+                .WithMany(c => c.Archivos)
+                .HasForeignKey(a => a.IdCursos)
+                .OnDelete(DeleteBehavior.NoAction);
 
             // =========================================
             // ANALISIS IA
@@ -314,6 +329,38 @@ namespace PlanoriaCapstone.Dal
                 .HasForeignKey(p => p.IdArchivo)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // =====================================
+            // PROGRESO FLASHCARD
+            // =====================================
+
+            modelBuilder.Entity<ProgresoFlashcard>()
+                .HasOne(p => p.Usuario)
+                .WithMany()
+                .HasForeignKey(p => p.IdUsuario)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ProgresoFlashcard>()
+                .HasOne(p => p.Flashcard)
+                .WithMany()
+                .HasForeignKey(p => p.IdFlashcard)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // =====================================
+            // PROGRESO QUIZ
+            // =====================================
+
+            modelBuilder.Entity<ProgresoQuiz>()
+                .HasOne(p => p.Usuario)
+                .WithMany()
+                .HasForeignKey(p => p.IdUsuario)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ProgresoQuiz>()
+                .HasOne(p => p.Quiz)
+                .WithMany()
+                .HasForeignKey(p => p.IdQuiz)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // =========================================
             // RACHA USUARIO
             // =========================================
@@ -369,6 +416,33 @@ namespace PlanoriaCapstone.Dal
                 .WithMany(u => u.Auditorias)
                 .HasForeignKey(a => a.IdUsuario)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // =========================================
+            // CURSO
+            // =========================================
+
+            modelBuilder.Entity<Curso>()
+                .HasKey(c => c.IdCursos);
+
+            modelBuilder.Entity<Curso>()
+                .Property(c => c.Nombre)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            modelBuilder.Entity<Curso>()
+                .Property(c => c.Descripcion)
+                .HasMaxLength(1000);
+
+            modelBuilder.Entity<Curso>()
+                .Property(c => c.FechaCreacion)
+                .HasDefaultValueSql("GETDATE()");
+
+            // Relación Curso -> Usuario
+            modelBuilder.Entity<Curso>()
+                .HasOne(c => c.Usuario)
+                .WithMany(u => u.Cursos)
+                .HasForeignKey(c => c.IdUsuario)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // =========================================
             // SEED ROLES

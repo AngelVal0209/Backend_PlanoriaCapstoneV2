@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
 
   sqlserver:
@@ -12,6 +10,9 @@ services:
 
     ports:
       - "1433:1433"
+
+    volumes:
+      - sqlserver_data:/var/opt/mssql
 
     networks:
       - planoria-network
@@ -36,3 +37,6 @@ services:
 
 networks:
   planoria-network:
+
+volumes:
+  sqlserver_data:

@@ -1,9 +1,10 @@
-﻿using System;
+﻿using PlanoriaCapstone.DTOs.Flashcard;
+using PlanoriaCapstone.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PlanoriaCapstone.Models;
 
 namespace PlanoriaCapstone.Bll.Interface
 {
@@ -20,8 +21,11 @@ namespace PlanoriaCapstone.Bll.Interface
                 bool correcta,
                 int tiempoRespuestaSegundos);
 
-        Task<Flashcard?>
-            ObtenerPorIdAsync(
-                int idFlashcard);
+        Task<Flashcard?> 
+            ObtenerPorIdAsync(int idFlashcard);
+
+        Task<FlashcardResponseDTO> CrearManualAsync(CrearFlashcardDTO dto);
+
+        Task<IEnumerable<FlashcardResponseDTO>> ObtenerTodosAsync();
     }
 }
