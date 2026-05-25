@@ -1,12 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using PlanoriaCapstone.DTOs.Curso;
 
 namespace PlanoriaCapstone.Bll.Interface
 {
-    internal interface ICursoService
+    public interface ICursoService
     {
+        // =====================================
+        // CREAR CURSO
+        // =====================================
+
+        Task<CursoResponseDTO>
+            CrearAsync(
+                CrearCursoDTO dto, int idUsuario);
+
+        // =====================================
+        // OBTENER TODOS
+        // =====================================
+
+        Task<IEnumerable<CursoResponseDTO>>
+            ObtenerTodosAsync();
+
+        // =====================================
+        // OBTENER POR ID
+        // =====================================
+
+        Task<CursoResponseDTO?>
+            ObtenerPorIdAsync(
+                int idCurso);
+
+        // =====================================
+        // ELIMINAR
+        // =====================================
+
+        Task<bool>
+            EliminarAsync(
+                int idCurso);
     }
 }

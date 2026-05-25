@@ -80,19 +80,13 @@ namespace Backend_PlanoriaCapstone.Controllers
             var userId = ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
 
-            // Map from DTO to primitive params expected by the service
-            int correctas   = dto.Correctas;
-            int incorrectas = dto.Incorrectas;
-            decimal puntaje = dto.Puntaje;
-            int tiempoMinutos = dto.TiempoMinutos;
-
             var resultado = await _quizService.ResolverQuizAsync(
                 userId.Value,
                 id,
-                correctas,
-                incorrectas,
-                puntaje,
-                tiempoMinutos);
+                dto.Correctas,
+                dto.Incorrectas,
+                dto.Puntaje,
+                dto.TiempoMinutos);
 
             if (!resultado)
                 return BadRequest("No se pudo guardar el resultado del quiz.");

@@ -1,12 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using PlanoriaCapstone.Models;
 
 namespace PlanoriaCapstone.Dal.Interface
 {
-    internal class ICursoRepository
+    public interface ICursoRepository
     {
+        // =====================================
+        // CREAR
+        // =====================================
+
+        Task CrearAsync(Curso curso);
+
+        // =====================================
+        // GET ALL
+        // =====================================
+
+        Task<IEnumerable<Curso>>
+            ObtenerTodosAsync();
+
+        // =====================================
+        // GET BY ID
+        // =====================================
+
+        Task<Curso?>
+            ObtenerPorIdAsync(
+                int idCurso);
+
+        // =====================================
+        // DELETE
+        // =====================================
+
+        Task EliminarAsync(
+            Curso curso);
+
+        // =====================================
+        // SAVE CHANGES
+        // =====================================
+
+        Task GuardarCambiosAsync();
     }
 }

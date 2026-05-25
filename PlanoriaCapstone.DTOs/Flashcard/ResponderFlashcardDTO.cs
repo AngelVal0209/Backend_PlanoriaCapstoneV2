@@ -8,8 +8,6 @@ namespace PlanoriaCapstone.DTOs.Flashcard
 {
     public class ResponderFlashcardDTO
     {
-        public int IdUsuario { get; set; }
-
         public int IdFlashcard { get; set; }
 
         public bool Correcta { get; set; }

@@ -2,10 +2,6 @@ namespace PlanoriaCapstone.DTOs.Quiz
 {
     public class ResolverQuizDTO
     {
-        public int IdUsuario { get; set; }
-
-        public int IdQuiz { get; set; }
-
         public int Correctas { get; set; }
 
         public int Incorrectas { get; set; }

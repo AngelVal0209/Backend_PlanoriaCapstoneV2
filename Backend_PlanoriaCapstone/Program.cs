@@ -31,6 +31,7 @@ builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IProgresoService, ProgresoService>();
 builder.Services.AddScoped<IIAService, GeminiService>();
 builder.Services.AddScoped<IImageService, ImageService>();
+builder.Services.AddScoped<ICursoService,CursoService>();
 
 builder.Services.AddHttpClient();
 
@@ -40,6 +41,7 @@ builder.Services.AddScoped<IArchivoRepository, ArchivoRepository>();
 builder.Services.AddScoped<IFlashcardRepository, FlashcardRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddScoped<IProgresoRepository, ProgresoRepository>();
+builder.Services.AddScoped<ICursoRepository,CursoRepository>();
 
 // CONTROLLERS
 builder.Services.AddControllers()
@@ -133,37 +135,51 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// SWAGGER SOLO EN DESARROLLO
+// =====================================
+// SWAGGER
+// =====================================
+
+app.UseSwagger();
+
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint(
+        "/swagger/v1/swagger.json",
+        "Planoria API v1");
+});
+
+// =====================================
+// HTTPS SOLO EN LOCAL
+// =====================================
+
 if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint(
-            "/swagger/v1/swagger.json",
-            "Planoria API v1");
-    });
-}
-
-// IMPORTANTE:
-// EN DOCKER NORMALMENTE NO USARÁS HTTPS
-if (!app.Environment.IsDevelopment())
-{
-    // Producción/Docker
-}
-else
 {
     app.UseHttpsRedirection();
 }
 
+// =====================================
+// STATIC FILES
+// =====================================
+
 app.UseStaticFiles();
 
+// =====================================
+// CORS
+// =====================================
+
 app.UseCors("AllowAll");
+
+// =====================================
+// AUTH
+// =====================================
 
 app.UseAuthentication();
 
 app.UseAuthorization();
+
+// =====================================
+// CONTROLLERS
+// =====================================
 
 app.MapControllers();
 

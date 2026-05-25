@@ -8,8 +8,6 @@ namespace PlanoriaCapstone.DTOs.Progreso
 {
     public class ActualizarProgresoDTO
     {
-        public int IdUsuario { get; set; }
-
         public int IdArchivo { get; set; }
 
         public int FlashcardsCompletadas { get; set; }

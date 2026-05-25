@@ -422,7 +422,7 @@ namespace PlanoriaCapstone.Dal
             // =========================================
 
             modelBuilder.Entity<Curso>()
-                .HasKey(c => c.IdCursos);
+                .HasKey(c => c.IdCurso);
 
             modelBuilder.Entity<Curso>()
                 .Property(c => c.Nombre)
