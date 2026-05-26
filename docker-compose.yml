@@ -12,7 +12,11 @@ services:
       - "1433:1433"
 
     volumes:
+<<<<<<< HEAD
+      - sqlserver_data:/var/opt/mssql
+=======
       - sqlserver-data:/var/opt/mssql
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
     networks:
       - planoria-network
@@ -41,3 +45,6 @@ volumes:
 
 networks:
   planoria-network:
+
+volumes:
+  sqlserver_data:

@@ -31,12 +31,20 @@ builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IProgresoService, ProgresoService>();
 builder.Services.AddScoped<IIAService, GeminiService>();
 builder.Services.AddScoped<IImageService, ImageService>();
+builder.Services.AddScoped<ICursoService,CursoService>();
 
 builder.Services.AddHttpClient();
 
 // REPOSITORIES
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IArchivoRepository, ArchivoRepository>();
+<<<<<<< HEAD
+builder.Services.AddScoped<IFlashcardRepository, FlashcardRepository>();
+builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+builder.Services.AddScoped<IProgresoRepository, ProgresoRepository>();
+builder.Services.AddScoped<ICursoRepository,CursoRepository>();
+=======
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
 // CONTROLLERS
 builder.Services.AddControllers()
@@ -49,6 +57,7 @@ builder.Services.AddControllers()
             JsonIgnoreCondition.WhenWritingNull;
     });
 
+// SWAGGER
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
@@ -129,6 +138,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+<<<<<<< HEAD
+// =====================================
+=======
 // AUTO-MIGRATE (with retry for SQL Server startup)
 using (var scope = app.Services.CreateScope())
 {
@@ -148,7 +160,10 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 // SWAGGER
+// =====================================
+
 app.UseSwagger();
 
 app.UseSwaggerUI(c =>
@@ -158,16 +173,38 @@ app.UseSwaggerUI(c =>
         "Planoria API v1");
 });
 
-// HTTPS
-app.UseHttpsRedirection();
+// =====================================
+// HTTPS SOLO EN LOCAL
+// =====================================
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+// =====================================
+// STATIC FILES
+// =====================================
 
 app.UseStaticFiles();
 
+// =====================================
+// CORS
+// =====================================
+
 app.UseCors("AllowAll");
+
+// =====================================
+// AUTH
+// =====================================
 
 app.UseAuthentication();
 
 app.UseAuthorization();
+
+// =====================================
+// CONTROLLERS
+// =====================================
 
 app.MapControllers();
 

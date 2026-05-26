@@ -17,12 +17,30 @@ namespace Backend_PlanoriaCapstone.Controllers
         {
             _quizService = quizService;
         }
+        // GET api/quiz/todos
+        // Returns all quizzes summaries
+        [HttpGet("todos")]
+        public async Task<IActionResult> ObtenerTodos()
+        {
+            var quizzes =
+                await _quizService.ObtenerTodosAsync();
 
+            return Ok(new
+            {
+                success = true,
+                data = quizzes
+            });
+        }
         // GET api/quiz?idArchivo=5
         // Returns all quizzes generated for a given archivo
         [HttpGet]
-        public async Task<IActionResult> ObtenerPorArchivo([FromQuery] int idArchivo)
+        public async Task<IActionResult> ObtenerPorArchivo(
+            [FromQuery] int idArchivo)
         {
+<<<<<<< HEAD
+            var quizzes =
+                await _quizService.ObtenerPorArchivoAsync(idArchivo);
+=======
             var userId = User.ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
 
@@ -30,18 +48,29 @@ namespace Backend_PlanoriaCapstone.Controllers
             if (!tieneAcceso) return Forbid();
 
             var quizzes = await _quizService.ObtenerPorArchivoAsync(idArchivo);
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
             if (quizzes == null || !quizzes.Any())
-                return NotFound("No se encontraron quizzes para este archivo.");
+            {
+                return NotFound(
+                    "No se encontraron quizzes.");
+            }
 
-            return Ok(quizzes);
+            return Ok(new
+            {
+                success = true,
+                data = quizzes
+            });
         }
-
         // GET api/quiz/{id}
         // Returns a specific quiz with its questions
         [HttpGet("{id:int}")]
         public async Task<IActionResult> ObtenerPorId(int id)
         {
+<<<<<<< HEAD
+            var quiz =
+                await _quizService.ObtenerPorIdAsync(id);
+=======
             var userId = User.ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
 
@@ -50,8 +79,16 @@ namespace Backend_PlanoriaCapstone.Controllers
 
             var quiz = await _quizService.ObtenerPorIdAsync(id);
             if (quiz == null) return NotFound("Quiz no encontrado.");
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
-            return Ok(quiz);
+            if (quiz == null)
+                return NotFound("Quiz no encontrado.");
+
+            return Ok(new
+            {
+                success = true,
+                data = quiz
+            });
         }
 
         // POST api/quiz/{id}/resolver

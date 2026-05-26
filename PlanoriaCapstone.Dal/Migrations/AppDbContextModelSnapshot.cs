@@ -74,6 +74,9 @@ namespace PlanoriaCapstone.Dal.Migrations
                     b.Property<DateTime>("FechaSubida")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("IdCursos")
+                        .HasColumnType("int");
+
                     b.Property<int>("IdUsuario")
                         .HasColumnType("int");
 
@@ -97,6 +100,8 @@ namespace PlanoriaCapstone.Dal.Migrations
                         .HasColumnType("nvarchar(1000)");
 
                     b.HasKey("IdArchivo");
+
+                    b.HasIndex("IdCursos");
 
                     b.HasIndex("IdUsuario");
 
@@ -135,6 +140,38 @@ namespace PlanoriaCapstone.Dal.Migrations
                     b.HasIndex("IdUsuario");
 
                     b.ToTable("Auditorias");
+                });
+
+            modelBuilder.Entity("PlanoriaCapstone.Models.Curso", b =>
+                {
+                    b.Property<int>("IdCurso")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdCurso"));
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("FechaCreacion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("IdCurso");
+
+                    b.HasIndex("IdUsuario");
+
+                    b.ToTable("Cursos");
                 });
 
             modelBuilder.Entity("PlanoriaCapstone.Models.EstadisticaIA", b =>
@@ -375,6 +412,67 @@ namespace PlanoriaCapstone.Dal.Migrations
                     b.ToTable("ProgresoArchivos");
                 });
 
+            modelBuilder.Entity("PlanoriaCapstone.Models.ProgresoFlashcard", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Completado")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("IdFlashcard")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VecesRepasada")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdFlashcard");
+
+                    b.HasIndex("IdUsuario");
+
+                    b.ToTable("ProgresoFlashcards");
+                });
+
+            modelBuilder.Entity("PlanoriaCapstone.Models.ProgresoQuiz", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Completado")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("FechaRealizacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdQuiz")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Puntaje")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdQuiz");
+
+                    b.HasIndex("IdUsuario");
+
+                    b.ToTable("ProgresoQuizzes");
+                });
+
             modelBuilder.Entity("PlanoriaCapstone.Models.Quiz", b =>
                 {
                     b.Property<int>("IdQuiz")
@@ -551,11 +649,18 @@ namespace PlanoriaCapstone.Dal.Migrations
 
             modelBuilder.Entity("PlanoriaCapstone.Models.ArchivoSubido", b =>
                 {
+                    b.HasOne("PlanoriaCapstone.Models.Curso", "Curso")
+                        .WithMany("Archivos")
+                        .HasForeignKey("IdCursos")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("PlanoriaCapstone.Models.Usuario", "Usuario")
                         .WithMany("ArchivosSubidos")
                         .HasForeignKey("IdUsuario")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Curso");
 
                     b.Navigation("Usuario");
                 });
@@ -566,6 +671,17 @@ namespace PlanoriaCapstone.Dal.Migrations
                         .WithMany("Auditorias")
                         .HasForeignKey("IdUsuario")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("PlanoriaCapstone.Models.Curso", b =>
+                {
+                    b.HasOne("PlanoriaCapstone.Models.Usuario", "Usuario")
+                        .WithMany("Cursos")
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Usuario");
                 });
@@ -660,6 +776,44 @@ namespace PlanoriaCapstone.Dal.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("PlanoriaCapstone.Models.ProgresoFlashcard", b =>
+                {
+                    b.HasOne("PlanoriaCapstone.Models.Flashcard", "Flashcard")
+                        .WithMany()
+                        .HasForeignKey("IdFlashcard")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PlanoriaCapstone.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Flashcard");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("PlanoriaCapstone.Models.ProgresoQuiz", b =>
+                {
+                    b.HasOne("PlanoriaCapstone.Models.Quiz", "Quiz")
+                        .WithMany()
+                        .HasForeignKey("IdQuiz")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PlanoriaCapstone.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("PlanoriaCapstone.Models.Quiz", b =>
                 {
                     b.HasOne("PlanoriaCapstone.Models.AnalisisIA", "AnalisisIA")
@@ -705,6 +859,11 @@ namespace PlanoriaCapstone.Dal.Migrations
                     b.Navigation("AnalisisIA");
                 });
 
+            modelBuilder.Entity("PlanoriaCapstone.Models.Curso", b =>
+                {
+                    b.Navigation("Archivos");
+                });
+
             modelBuilder.Entity("PlanoriaCapstone.Models.Flashcard", b =>
                 {
                     b.Navigation("HistorialFlashcards");
@@ -727,6 +886,8 @@ namespace PlanoriaCapstone.Dal.Migrations
                     b.Navigation("ArchivosSubidos");
 
                     b.Navigation("Auditorias");
+
+                    b.Navigation("Cursos");
 
                     b.Navigation("EstadisticaIA");
 

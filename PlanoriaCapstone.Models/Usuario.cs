@@ -53,5 +53,7 @@ namespace PlanoriaCapstone.Models
         public ICollection<ProgresoArchivo>? ProgresoArchivos { get; set; }
 
         public EstadisticaIA? EstadisticaIA { get; set; }
+
+        public ICollection<Curso>? Cursos { get; set; }
     }
 }

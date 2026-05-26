@@ -13,6 +13,9 @@ namespace PlanoriaCapstone.Bll.Interface
     {
         Task<ArchivoSubido> SubirArchivoAsync(
             int idUsuario,
+            int? idCurso,
+            int cantidadFlashcards, 
+            int cantidadPreguntas,
             IFormFile archivo);
 
         Task<IEnumerable<ArchivoSubido>> ObtenerArchivosUsuarioAsync(

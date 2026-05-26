@@ -9,16 +9,35 @@ namespace PlanoriaCapstone.Bll.Service
     public class QuizService : IQuizService
     {
         private readonly AppDbContext _context;
-        private readonly IProgresoService _progresoService;
 
-        public QuizService(
-            AppDbContext context,
-            IProgresoService progresoService)
+        public QuizService(AppDbContext context)
         {
             _context = context;
-            _progresoService = progresoService;
         }
 
+<<<<<<< HEAD
+        // =====================================
+        // GET ALL QUIZZES
+        // =====================================
+
+        public async Task<IEnumerable<QuizResumenDTO>>
+            ObtenerTodosAsync()
+        {
+            return await _context.Quizzes
+                .Select(q => new QuizResumenDTO
+                {
+                    IdQuiz = q.IdQuiz,
+
+                    Titulo = q.Titulo,
+
+                    Descripcion = q.Descripcion,
+
+                    FechaCreacion =
+                        q.FechaCreacion,
+
+                    TotalPreguntas =
+                        q.PreguntasQuiz.Count()
+=======
         public async Task<List<QuizResponseDTO>> ObtenerPorArchivoAsync(
             int idArchivo)
         {
@@ -45,10 +64,63 @@ namespace PlanoriaCapstone.Bll.Service
                             OpcionD = p.OpcionD
                         })
                         .ToList()
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
                 })
                 .ToListAsync();
         }
 
+<<<<<<< HEAD
+        // =====================================
+        // GET QUIZZES BY ARCHIVO
+        // =====================================
+
+        public async Task<IEnumerable<QuizResponseDTO>>
+            ObtenerPorArchivoAsync(int idArchivo)
+        {
+            return await _context.Quizzes
+                .Where(q =>
+                    q.AnalisisIA.IdArchivo
+                    == idArchivo)
+
+                .Select(q => new QuizResponseDTO
+                {
+                    IdQuiz = q.IdQuiz,
+
+                    Titulo = q.Titulo,
+
+                    Descripcion =
+                        q.Descripcion,
+
+                    FechaCreacion =
+                        q.FechaCreacion,
+
+                    Preguntas =
+                        q.PreguntasQuiz
+                        .Select(p =>
+                            new PreguntaQuizDTO
+                            {
+                                IdPreguntaQuiz =
+                                    p.IdPreguntaQuiz,
+
+                                Pregunta =
+                                    p.Pregunta,
+
+                                OpcionA =
+                                    p.OpcionA,
+
+                                OpcionB =
+                                    p.OpcionB,
+
+                                OpcionC =
+                                    p.OpcionC,
+
+                                OpcionD =
+                                    p.OpcionD
+                            })
+                        .ToList()
+                })
+                .ToListAsync();
+=======
         public async Task<QuizResponseDTO?> ObtenerPorIdAsync(
             int idQuiz)
         {
@@ -75,18 +147,82 @@ namespace PlanoriaCapstone.Bll.Service
                         .ToList()
                 })
                 .FirstOrDefaultAsync();
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
         }
 
-        public async Task<bool> ResolverQuizAsync(
-            int idUsuario,
-            int idQuiz,
-            int correctas,
-            int incorrectas,
-            decimal puntaje,
-            int tiempoResolucionMinutos)
+        // =====================================
+        // GET QUIZ BY ID
+        // =====================================
+
+        public async Task<QuizResponseDTO?>
+            ObtenerPorIdAsync(int idQuiz)
+        {
+            return await _context.Quizzes
+                .Where(q =>
+                    q.IdQuiz == idQuiz)
+
+                .Select(q => new QuizResponseDTO
+                {
+                    IdQuiz = q.IdQuiz,
+
+                    Titulo = q.Titulo,
+
+                    Descripcion =
+                        q.Descripcion,
+
+                    FechaCreacion =
+                        q.FechaCreacion,
+
+                    Preguntas =
+                        q.PreguntasQuiz
+                        .Select(p =>
+                            new PreguntaQuizDTO
+                            {
+                                IdPreguntaQuiz =
+                                    p.IdPreguntaQuiz,
+
+                                Pregunta =
+                                    p.Pregunta,
+
+                                OpcionA =
+                                    p.OpcionA,
+
+                                OpcionB =
+                                    p.OpcionB,
+
+                                OpcionC =
+                                    p.OpcionC,
+
+                                OpcionD =
+                                    p.OpcionD,
+
+                                RespuestaCorrecta =
+                                    p.RespuestaCorrecta,
+
+                                Explicacion =
+                                    p.Explicacion
+                            })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
+        }
+
+        // =====================================
+        // RESOLVER QUIZ
+        // =====================================
+
+        public async Task<bool>
+            ResolverQuizAsync(
+                int idUsuario,
+                int idQuiz,
+                int correctas,
+                int incorrectas,
+                decimal puntaje,
+                int tiempoResolucionMinutos)
         {
             var quiz = await _context.Quizzes
                 .Include(q => q.AnalisisIA)
+
                 .FirstOrDefaultAsync(q =>
                     q.IdQuiz == idQuiz);
 
@@ -96,19 +232,51 @@ namespace PlanoriaCapstone.Bll.Service
             var historial = new HistorialQuiz
             {
                 IdUsuario = idUsuario,
+
                 IdQuiz = idQuiz,
+
                 Puntaje = puntaje,
-                CantidadCorrectas = correctas,
-                CantidadIncorrectas = incorrectas,
+
+                CantidadCorrectas =
+                    correctas,
+
+                CantidadIncorrectas =
+                    incorrectas,
+
                 TiempoResolucionMinutos =
                     tiempoResolucionMinutos,
+
+                FechaRealizacion =
+                    DateTime.UtcNow
+            };
+
+            _context.HistorialQuizzes
+                .Add(historial);
+
+            // =====================================
+            // GUARDAR PROGRESO QUIZ
+            // =====================================
+
+            var progresoQuiz = new ProgresoQuiz
+            {
+                IdUsuario = idUsuario,
+
+                IdQuiz = idQuiz,
+
+                Puntaje = puntaje,
+
+                Completado = true,
+
                 FechaRealizacion = DateTime.UtcNow
             };
 
-            _context.HistorialQuizzes.Add(historial);
+            _context.ProgresoQuizzes
+                .Add(progresoQuiz);
 
             await _context.SaveChangesAsync();
 
+<<<<<<< HEAD
+=======
             if (quiz.AnalisisIA != null)
             {
                 var quizzesCompletados =
@@ -130,6 +298,7 @@ namespace PlanoriaCapstone.Bll.Service
                         quizzesCompletados);
             }
 
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
             return true;
         }
 

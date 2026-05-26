@@ -3,6 +3,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlanoriaCapstone.Bll.Interface;
 using PlanoriaCapstone.Dal.Interface;
+<<<<<<< HEAD
+using PlanoriaCapstone.DTOs.Archivo;
+using System.Security.Claims;
+=======
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
 namespace Backend_PlanoriaCapstone.Controllers
 {
@@ -56,25 +61,69 @@ namespace Backend_PlanoriaCapstone.Controllers
         // Uploads a new file (.pdf or .txt) and triggers AI processing
         [HttpPost]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> SubirArchivo(IFormFile archivo)
+        public async Task<IActionResult> SubirArchivo( [FromForm] UploadArchivoDTO dto)
         {
+<<<<<<< HEAD
+            var userId = ObtenerUserId();
+=======
             _logger.LogInformation("=== SubirArchivo INICIO: FileName={FileName}, Length={Length}", archivo?.FileName, archivo?.Length);
 
             var userId = User.ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
-            if (archivo == null || archivo.Length == 0)
-                return BadRequest("Por favor seleccione un archivo válido.");
+            if (userId == null)
+                return Unauthorized("Token inválido.");
 
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (dto.Archivo == null || dto.Archivo.Length == 0)
+                return BadRequest("Archivo inválido.");
+
+            const long maxSize = 10 * 1024 * 1024;
+
+            if (dto.Archivo.Length > maxSize)
+                return BadRequest("El archivo supera 10MB.");
+
+            var extension =
+                Path.GetExtension(dto.Archivo.FileName).ToLower();
+
+<<<<<<< HEAD
+=======
             if (archivo.Length > 10 * 1024 * 1024)
                 return BadRequest("El archivo no puede superar los 10 MB.");
 
             var extension = Path.GetExtension(archivo.FileName).ToLower();
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
             if (extension != ".pdf" && extension != ".txt")
-                return BadRequest("Solo se permiten archivos .pdf o .txt.");
+            {
+                return BadRequest(
+                    "Solo se permiten archivos .pdf o .txt.");
+            }
 
             try
             {
+<<<<<<< HEAD
+                var nuevoArchivo =
+                    await _archivoService.SubirArchivoAsync(
+                        userId.Value,
+                        dto.IdCurso,
+                        dto.CantidadFlashcards,
+                        dto.CantidadPreguntas,
+                        dto.Archivo);
+
+                return CreatedAtAction(
+                    nameof(ObtenerPorId),
+                    new { id = nuevoArchivo.IdArchivo },
+                    nuevoArchivo);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    500,
+                    $"Error al procesar archivo: {ex.Message}");
+=======
                 _logger.LogInformation("Llamando a SubirArchivoAsync...");
                 var nuevoArchivo = await _archivoService.SubirArchivoAsync(userId.Value, archivo);
                 _logger.LogInformation("SubirArchivoAsync OK, Id={Id}", nuevoArchivo.IdArchivo);
@@ -84,6 +133,7 @@ namespace Backend_PlanoriaCapstone.Controllers
             {
                 _logger.LogError(ex, "Error al procesar archivo {FileName} del usuario {UserId}", archivo.FileName, userId);
                 return StatusCode(500, "Error al procesar el archivo. Intente nuevamente más tarde.");
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
             }
         }
 

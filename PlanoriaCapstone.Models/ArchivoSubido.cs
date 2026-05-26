@@ -27,5 +27,10 @@ namespace PlanoriaCapstone.Models
         public Usuario? Usuario { get; set; }
 
         public ICollection<AnalisisIA>? AnalisisIA { get; set; }
+
+        //Relacion con la clase Curso 
+        public int? IdCursos { get; set; }
+
+        public Curso? Curso { get; set; }
     }
 }

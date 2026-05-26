@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PlanoriaCapstone.DTOs.Quiz
+﻿namespace PlanoriaCapstone.DTOs.Quiz
 {
     public class PreguntaQuizDTO
     {
@@ -22,5 +16,13 @@ namespace PlanoriaCapstone.DTOs.Quiz
         public string? OpcionC { get; set; }
 
         public string? OpcionD { get; set; }
+
+        // Opcional:
+        // SOLO si deseas mostrar respuestas correctas
+        // después de resolver el quiz
+
+        public string? RespuestaCorrecta { get; set; }
+
+        public string? Explicacion { get; set; }
     }
 }
