@@ -1,8 +1,9 @@
+using Backend_PlanoriaCapstone.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlanoriaCapstone.Bll.Interface;
 using PlanoriaCapstone.DTOs.Auth;
-using System.Security.Claims;
+using PlanoriaCapstone.DTOs.Response;
 
 namespace Backend_PlanoriaCapstone.Controllers
 {
@@ -23,20 +24,23 @@ namespace Backend_PlanoriaCapstone.Controllers
         [HttpGet("perfil")]
         public async Task<IActionResult> ObtenerPerfil()
         {
-            var userId = ObtenerUserId();
+            var userId = User.ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
 
             var usuario = await _usuarioService.ObtenerPorIdAsync(userId.Value);
             if (usuario == null) return NotFound("Usuario no encontrado.");
 
-            return Ok(new
+            return Ok(new UsuarioResponseDTO
             {
-                usuario.IdUsuario,
-                usuario.Nombre,
-                usuario.Apellido,
-                usuario.Correo,
-                usuario.FotoPerfilUrl,
-                Rol = usuario.IdRol == 1 ? "ADMIN" : "USER"
+                IdUsuario = usuario.IdUsuario,
+                Nombre = usuario.Nombre,
+                Apellido = usuario.Apellido,
+                Correo = usuario.Correo,
+                FotoPerfilUrl = usuario.FotoPerfilUrl,
+                Provider = usuario.Provider ?? "LOCAL",
+                RachaDias = usuario.RachaDias,
+                Puntos = usuario.Puntos,
+                Nivel = usuario.Nivel
             });
         }
 
@@ -48,7 +52,7 @@ namespace Backend_PlanoriaCapstone.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var userId = ObtenerUserId();
+            var userId = User.ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
 
             var actualizado = await _usuarioService.EditarPerfilAsync(
@@ -71,7 +75,7 @@ namespace Backend_PlanoriaCapstone.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var userId = ObtenerUserId();
+            var userId = User.ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
 
             var cambiado = await _usuarioService.CambiarPasswordAsync(
@@ -90,7 +94,7 @@ namespace Backend_PlanoriaCapstone.Controllers
         [HttpDelete]
         public async Task<IActionResult> EliminarCuenta()
         {
-            var userId = ObtenerUserId();
+            var userId = User.ObtenerUserId();
             if (userId == null) return Unauthorized("Token inválido.");
 
             var eliminado = await _usuarioService.EliminarCuentaAsync(userId.Value);
@@ -100,11 +104,6 @@ namespace Backend_PlanoriaCapstone.Controllers
             return NoContent();
         }
 
-        // ─── Helper ────────────────────────────────────────────────────────────
-        private int? ObtenerUserId()
-        {
-            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.TryParse(claim, out var id) ? id : null;
-        }
+
     }
 }

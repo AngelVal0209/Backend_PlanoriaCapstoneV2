@@ -9,16 +9,5 @@ namespace PlanoriaCapstone.DTOs.Quiz
         public decimal Puntaje { get; set; }
 
         public int TiempoMinutos { get; set; }
-
-        public List<RespuestaPreguntaDTO> Respuestas
-        { get; set; } = new();
-    }
-
-    public class RespuestaPreguntaDTO
-    {
-        public int IdPreguntaQuiz { get; set; }
-
-        public string Respuesta { get; set; }
-            = string.Empty;
     }
 }

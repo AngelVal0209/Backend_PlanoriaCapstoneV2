@@ -2,3 +2,11 @@ bin/
 obj/
 .vs/
 .git/
+.env
+.env.example
+README.md
+LEEME.md
+gemini_test.json
+.gitignore
+run_api.bat
+*.md

@@ -1,20 +1,19 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PlanoriaCapstone.Bll.Interface;
 using PlanoriaCapstone.Dal;
+<<<<<<< HEAD
 using PlanoriaCapstone.Dal.Interface;
+=======
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 using PlanoriaCapstone.DTOs.Flashcard;
 using PlanoriaCapstone.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PlanoriaCapstone.Bll.Service
 {
     public class FlashcardService
          : IFlashcardService
     {
+<<<<<<< HEAD
         private readonly IFlashcardRepository _repository;
         private readonly AppDbContext _context;
 
@@ -22,24 +21,41 @@ namespace PlanoriaCapstone.Bll.Service
         {
             _context = context;
             _repository = repository;
+=======
+        private readonly AppDbContext _context;
+
+        private readonly IProgresoService
+            _progresoService;
+
+        public FlashcardService(
+            AppDbContext context,
+            IProgresoService progresoService)
+        {
+            _context = context;
+            _progresoService = progresoService;
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
         }
 
-        // =====================================
-        // OBTENER FLASHCARDS
-        // =====================================
-
-        public async Task<IEnumerable<Flashcard>>
+        public async Task<List<FlashcardResponseDTO>>
             ObtenerPorArchivoAsync(
                 int idAnalisis)
         {
-            return await _repository
-                .ObtenerPorArchivoAsync(
-                    idAnalisis);
+            return await _context.Flashcards
+                .Where(f =>
+                    f.IdAnalisis == idAnalisis)
+                .Select(f =>
+                    new FlashcardResponseDTO
+                    {
+                        IdFlashcard = f.IdFlashcard,
+                        Pregunta = f.Pregunta,
+                        Respuesta = f.Respuesta,
+                        NivelDificultad =
+                            f.NivelDificultad,
+                        VecesEstudiada =
+                            f.VecesEstudiada
+                    })
+                .ToListAsync();
         }
-
-        // =====================================
-        // RESPONDER FLASHCARD
-        // =====================================
 
         public async Task<bool>
             ResponderAsync(
@@ -48,6 +64,7 @@ namespace PlanoriaCapstone.Bll.Service
                 bool correcta,
                 int tiempoRespuestaSegundos)
         {
+<<<<<<< HEAD
             var resultado = await _repository
                 .ResponderAsync(
                     idUsuario,
@@ -93,20 +110,104 @@ namespace PlanoriaCapstone.Bll.Service
 
             await _context.SaveChangesAsync();
 
+=======
+            var flashcard =
+                await _context.Flashcards
+                    .Include(f =>
+                        f.AnalisisIA)
+                    .FirstOrDefaultAsync(f =>
+                        f.IdFlashcard == idFlashcard);
+
+            if (flashcard == null)
+                return false;
+
+            var historial = new HistorialFlashcard
+            {
+                IdUsuario = idUsuario,
+                IdFlashcard = idFlashcard,
+                Correcta = correcta,
+                TiempoRespuestaSegundos =
+                    tiempoRespuestaSegundos,
+                FechaRespuesta = DateTime.UtcNow
+            };
+
+            _context.HistorialFlashcards
+                .Add(historial);
+
+            flashcard.VecesEstudiada++;
+
+            await _context.SaveChangesAsync();
+
+            // AUTO-UPDATE PROGRESO
+            if (flashcard.AnalisisIA != null)
+            {
+                var flashcardsCompletadas =
+                    await _context
+                        .HistorialFlashcards
+                        .Where(hf =>
+                            hf.IdUsuario == idUsuario
+                            && hf.Flashcard != null
+                            && hf.Flashcard.IdAnalisis
+                                == flashcard.IdAnalisis)
+                        .Select(hf => hf.IdFlashcard)
+                        .Distinct()
+                        .CountAsync();
+
+                await _progresoService
+                    .ActualizarProgresoAsync(
+                        idUsuario,
+                        flashcard.AnalisisIA
+                            .IdArchivo,
+                        flashcardsCompletadas,
+                        0);
+            }
+
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
             return true;
         }
 
-        // =====================================
-        // OBTENER FLASHCARD POR ID
-        // =====================================
-
-        public async Task<Flashcard?>
+        public async Task<FlashcardResponseDTO?>
             ObtenerPorIdAsync(
                 int idFlashcard)
         {
-            return await _repository
-                .ObtenerPorIdAsync(
-                    idFlashcard);
+            return await _context.Flashcards
+                .Where(f =>
+                    f.IdFlashcard == idFlashcard)
+                .Select(f =>
+                    new FlashcardResponseDTO
+                    {
+                        IdFlashcard = f.IdFlashcard,
+                        Pregunta = f.Pregunta,
+                        Respuesta = f.Respuesta,
+                        NivelDificultad =
+                            f.NivelDificultad,
+                        VecesEstudiada =
+                            f.VecesEstudiada
+                    })
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<bool> VerificarAccesoAnalisisAsync(
+            int idAnalisis,
+            int idUsuario)
+        {
+            return await _context.AnalisisIA
+                .AnyAsync(a =>
+                    a.IdAnalisis == idAnalisis
+                    && a.ArchivoSubido != null
+                    && a.ArchivoSubido.IdUsuario == idUsuario);
+        }
+
+        public async Task<bool> VerificarAccesoFlashcardAsync(
+            int idFlashcard,
+            int idUsuario)
+        {
+            return await _context.Flashcards
+                .AnyAsync(f =>
+                    f.IdFlashcard == idFlashcard
+                    && f.AnalisisIA != null
+                    && f.AnalisisIA.ArchivoSubido != null
+                    && f.AnalisisIA.ArchivoSubido.IdUsuario == idUsuario);
         }
 
         // =====================================

@@ -1,7 +1,12 @@
+using Backend_PlanoriaCapstone.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlanoriaCapstone.Bll.Interface;
+<<<<<<< HEAD
 using System.Security.Claims;
+=======
+using PlanoriaCapstone.DTOs.Progreso;
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
 namespace Backend_PlanoriaCapstone.Controllers
 {
@@ -18,9 +23,24 @@ namespace Backend_PlanoriaCapstone.Controllers
             _progresoService = progresoService;
         }
 
+<<<<<<< HEAD
         // =====================================
         // GET ALL USER PROGRESS
         // =====================================
+=======
+        // GET api/progreso/resumen
+        // Returns a dashboard summary for the authenticated user
+        [HttpGet("resumen")]
+        public async Task<IActionResult> ObtenerResumen()
+        {
+            var userId = User.ObtenerUserId();
+            if (userId == null) return Unauthorized("Token inválido.");
+
+            var resumen = await _progresoService.ObtenerResumenAsync(userId.Value);
+            return Ok(resumen);
+        }
+
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
         // GET api/progreso
         // Returns dashboard progress summary
         // for all user files
@@ -29,7 +49,12 @@ namespace Backend_PlanoriaCapstone.Controllers
         [HttpGet]
         public async Task<IActionResult> ObtenerTodos()
         {
+<<<<<<< HEAD
             var userId = ObtenerUserId();
+=======
+            var userId = User.ObtenerUserId();
+            if (userId == null) return Unauthorized("Token inválido.");
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
             if (userId == null)
                 return Unauthorized("Token inválido.");
@@ -58,7 +83,12 @@ namespace Backend_PlanoriaCapstone.Controllers
         public async Task<IActionResult>
             ObtenerPorArchivo(int idArchivo)
         {
+<<<<<<< HEAD
             var userId = ObtenerUserId();
+=======
+            var userId = User.ObtenerUserId();
+            if (userId == null) return Unauthorized("Token inválido.");
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
             if (userId == null)
                 return Unauthorized("Token inválido.");
@@ -97,7 +127,12 @@ namespace Backend_PlanoriaCapstone.Controllers
         public async Task<IActionResult>
             ObtenerPromedio(int idArchivo)
         {
+<<<<<<< HEAD
             var userId = ObtenerUserId();
+=======
+            var userId = User.ObtenerUserId();
+            if (userId == null) return Unauthorized("Token inválido.");
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
             if (userId == null)
                 return Unauthorized("Token inválido.");
@@ -124,6 +159,7 @@ namespace Backend_PlanoriaCapstone.Controllers
         // HELPER
         // =====================================
 
+<<<<<<< HEAD
         private int? ObtenerUserId()
         {
             var claim =
@@ -135,6 +171,18 @@ namespace Backend_PlanoriaCapstone.Controllers
                 out var id)
                 ? id
                 : null;
+=======
+            var userId = User.ObtenerUserId();
+            if (userId == null) return Unauthorized("Token inválido.");
+
+            await _progresoService.ActualizarProgresoAsync(
+                userId.Value,
+                dto.IdArchivo,
+                dto.FlashcardsCompletadas,
+                dto.QuizzesCompletados);
+
+            return Ok(new { success = true, mensaje = "Progreso actualizado correctamente." });
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
         }
     }
 }

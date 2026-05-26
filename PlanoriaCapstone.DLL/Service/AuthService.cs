@@ -28,10 +28,10 @@ namespace PlanoriaCapstone.Bll.Service
                 .ObtenerPorCorreoAsync(correo);
 
             if (usuario == null || !usuario.Estado)
-                throw new Exception("Credenciales inválidas.");
+                throw new UnauthorizedAccessException("Credenciales inválidas.");
 
             if (usuario.Provider == "GOOGLE")
-                throw new Exception("Use login con Google.");
+                throw new InvalidOperationException("Esta cuenta usa Google. Inicia sesión con Google.");
 
             var passwordValida = BCrypt.Net.BCrypt.Verify(
                 password,
@@ -39,7 +39,7 @@ namespace PlanoriaCapstone.Bll.Service
             );
 
             if (!passwordValida)
-                throw new Exception("Credenciales inválidas.");
+                throw new UnauthorizedAccessException("Credenciales inválidas.");
 
             var token = _jwtService.GenerarToken(usuario);
 

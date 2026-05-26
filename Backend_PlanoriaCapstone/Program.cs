@@ -38,10 +38,13 @@ builder.Services.AddHttpClient();
 // REPOSITORIES
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IArchivoRepository, ArchivoRepository>();
+<<<<<<< HEAD
 builder.Services.AddScoped<IFlashcardRepository, FlashcardRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddScoped<IProgresoRepository, ProgresoRepository>();
 builder.Services.AddScoped<ICursoRepository,CursoRepository>();
+=======
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
 // CONTROLLERS
 builder.Services.AddControllers()
@@ -135,7 +138,29 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+<<<<<<< HEAD
 // =====================================
+=======
+// AUTO-MIGRATE (with retry for SQL Server startup)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    for (int i = 0; i < 10; i++)
+    {
+        try
+        {
+            db.Database.Migrate();
+            break;
+        }
+        catch
+        {
+            if (i == 9) throw;
+            Thread.Sleep(3000);
+        }
+    }
+}
+
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 // SWAGGER
 // =====================================
 

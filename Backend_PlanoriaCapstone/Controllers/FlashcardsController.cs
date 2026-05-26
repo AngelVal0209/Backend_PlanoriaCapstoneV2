@@ -1,8 +1,8 @@
+using Backend_PlanoriaCapstone.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlanoriaCapstone.Bll.Interface;
 using PlanoriaCapstone.DTOs.Flashcard;
-using System.Security.Claims;
 
 namespace Backend_PlanoriaCapstone.Controllers
 {
@@ -36,6 +36,13 @@ namespace Backend_PlanoriaCapstone.Controllers
         [HttpGet]
         public async Task<IActionResult> ObtenerPorAnalisis([FromQuery] int idAnalisis)
         {
+            var userId = User.ObtenerUserId();
+            if (userId == null) return Unauthorized("Token inválido.");
+
+            // Ownership check: verify the analysis belongs to a file owned by the user
+            var tieneAcceso = await _flashcardService.VerificarAccesoAnalisisAsync(idAnalisis, userId.Value);
+            if (!tieneAcceso) return Forbid();
+
             var flashcards = await _flashcardService.ObtenerPorArchivoAsync(idAnalisis);
 
             if (flashcards == null || !flashcards.Any())
@@ -49,6 +56,12 @@ namespace Backend_PlanoriaCapstone.Controllers
         [HttpGet("{id:int}")]
         public async Task<IActionResult> ObtenerPorId(int id)
         {
+            var userId = User.ObtenerUserId();
+            if (userId == null) return Unauthorized("Token inválido.");
+
+            var tieneAcceso = await _flashcardService.VerificarAccesoFlashcardAsync(id, userId.Value);
+            if (!tieneAcceso) return Forbid();
+
             var flashcard = await _flashcardService.ObtenerPorIdAsync(id);
 
             if (flashcard == null)
@@ -98,10 +111,15 @@ namespace Backend_PlanoriaCapstone.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+<<<<<<< HEAD
             var userId = ObtenerUserId();
 
             if (userId == null)
                 return Unauthorized("Token inválido.");
+=======
+            var userId = User.ObtenerUserId();
+            if (userId == null) return Unauthorized("Token inválido.");
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
             var resultado = await _flashcardService.ResponderAsync(
                 userId.Value,
@@ -117,13 +135,6 @@ namespace Backend_PlanoriaCapstone.Controllers
                 success = true,
                 mensaje = "Flashcard respondida correctamente."
             });
-        }
-
-        // ─── Helper ────────────────────────────────────────────────────────────
-        private int? ObtenerUserId()
-        {
-            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.TryParse(claim, out var id) ? id : null;
         }
     }
 }

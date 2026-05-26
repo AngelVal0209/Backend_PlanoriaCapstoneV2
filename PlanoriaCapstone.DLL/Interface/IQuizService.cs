@@ -4,6 +4,7 @@ namespace PlanoriaCapstone.Bll.Interface
 {
     public interface IQuizService
     {
+<<<<<<< HEAD
         // =====================================
         // GET ALL QUIZZES
         // =====================================
@@ -28,6 +29,13 @@ namespace PlanoriaCapstone.Bll.Interface
         // =====================================
         // RESOLVER QUIZ
         // =====================================
+=======
+        Task<List<QuizResponseDTO>> ObtenerPorArchivoAsync(
+            int idArchivo);
+
+        Task<QuizResponseDTO?> ObtenerPorIdAsync(
+            int idQuiz);
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
         Task<bool> ResolverQuizAsync(
             int idUsuario,
@@ -35,6 +43,18 @@ namespace PlanoriaCapstone.Bll.Interface
             int correctas,
             int incorrectas,
             decimal puntaje,
+<<<<<<< HEAD
             int tiempoMinutos);
+=======
+            int tiempoResolucionMinutos);
+
+        Task<bool> VerificarAccesoArchivoAsync(
+            int idArchivo,
+            int idUsuario);
+
+        Task<bool> VerificarAccesoQuizAsync(
+            int idQuiz,
+            int idUsuario);
+>>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
     }
 }

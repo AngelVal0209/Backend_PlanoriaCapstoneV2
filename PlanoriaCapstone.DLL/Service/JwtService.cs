@@ -37,12 +37,14 @@ namespace PlanoriaCapstone.Bll.Service
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            var expireMinutes = Convert.ToInt32(_config["Jwt:ExpireMinutes"] ?? "60");
+            if (expireMinutes <= 0) expireMinutes = 60;
+
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
+                issuer: _config["Jwt:Issuer"] ?? "PlanoriaAPI",
+                audience: _config["Jwt:Audience"] ?? "PlanoriaClient",
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(
-                    Convert.ToInt32(_config["Jwt:ExpireMinutes"])),
+                expires: DateTime.UtcNow.AddMinutes(expireMinutes),
                 signingCredentials: creds
             );
 
