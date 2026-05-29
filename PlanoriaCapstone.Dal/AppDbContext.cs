@@ -1,465 +1,654 @@
-﻿using PlanoriaCapstone.Models;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.EntityFrameworkCore;
+using PlanoriaCapstone.Models;
 
 namespace PlanoriaCapstone.Dal
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options)
-            : base(options)
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+        public DbSet<User> Users => Set<User>();
+        public DbSet<UserCourse> UserCourses => Set<UserCourse>();
+        public DbSet<Course> Courses => Set<Course>();
+        public DbSet<UserCourseExamProgress> UserCourseExamProgresses => Set<UserCourseExamProgress>();
+        public DbSet<ExamReadinessScore> ExamReadinessScores => Set<ExamReadinessScore>();
+        public DbSet<FlashcardDeck> FlashcardDecks => Set<FlashcardDeck>();
+        public DbSet<Flashcard> Flashcards => Set<Flashcard>();
+        public DbSet<FlashcardStudySession> FlashcardStudySessions => Set<FlashcardStudySession>();
+        public DbSet<FlashcardReview> FlashcardReviews => Set<FlashcardReview>();
+        public DbSet<SpacedRepetitionSetting> SpacedRepetitionSettings => Set<SpacedRepetitionSetting>();
+        public DbSet<UserProgressFlashcard> UserProgressFlashcards => Set<UserProgressFlashcard>();
+        public DbSet<Quiz> Quizzes => Set<Quiz>();
+        public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
+        public DbSet<QuizOption> QuizOptions => Set<QuizOption>();
+        public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
+        public DbSet<QuizAnswer> QuizAnswers => Set<QuizAnswer>();
+        public DbSet<UserProgressQuiz> UserProgressQuizzes => Set<UserProgressQuiz>();
+        public DbSet<FileUpload> FileUploads => Set<FileUpload>();
+        public DbSet<GeneratedContent> GeneratedContents => Set<GeneratedContent>();
+        public DbSet<StudySchedule> StudySchedules => Set<StudySchedule>();
+        public DbSet<ScheduleInterval> ScheduleIntervals => Set<ScheduleInterval>();
+        public DbSet<ScheduleContent> ScheduleContents => Set<ScheduleContent>();
+        public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<SystemConfiguration> SystemConfigurations => Set<SystemConfiguration>();
+        public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+
+        protected override void OnModelCreating(ModelBuilder builder)
         {
-        }
+            base.OnModelCreating(builder);
 
-        public DbSet<Rol> Roles { get; set; }
+            // ==================================================================
+            // USER
+            // ==================================================================
+            builder.Entity<User>(e =>
+            {
+                e.HasKey(u => u.Id);
 
-        public DbSet<Usuario> Usuarios { get; set; }
+                e.Property(u => u.FullName).HasMaxLength(150).IsRequired();
+                e.Property(u => u.Email).HasMaxLength(255).IsRequired();
+                e.HasIndex(u => u.Email).IsUnique();
+                e.Property(u => u.PasswordHash).HasMaxLength(255).IsRequired();
+                e.Property(u => u.PreferredLanguage).HasMaxLength(10).HasDefaultValue("en");
+                e.Property(u => u.Theme).HasMaxLength(20).HasDefaultValue("light");
+                e.Property(u => u.Timezone).HasMaxLength(50).HasDefaultValue("UTC");
+                e.Property(u => u.NotificationEnabled).HasDefaultValue(true);
+                e.Property(u => u.EmailNotifications).HasDefaultValue(true);
+                e.Property(u => u.DefaultSpacedRepetitionDays).HasDefaultValue("[1,3,7,14,30]");
+                e.Property(u => u.CreatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(u => u.UpdatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(u => u.DeletedAt);
+            });
 
-        public DbSet<ArchivoSubido> ArchivosSubidos { get; set; }
+            // ==================================================================
+            // USER COURSE
+            // ==================================================================
+            builder.Entity<UserCourse>(e =>
+            {
+                e.HasKey(uc => uc.Id);
 
-        public DbSet<AnalisisIA> AnalisisIA { get; set; }
+                e.Property(uc => uc.Role).HasMaxLength(20).HasDefaultValue("owner");
+                e.Property(uc => uc.JoinedAt).HasDefaultValueSql("GETDATE()");
 
-        public DbSet<Flashcard> Flashcards { get; set; }
+                e.HasIndex(uc => new { uc.UserId, uc.CourseId }).IsUnique();
 
-        public DbSet<Quiz> Quizzes { get; set; }
+                e.HasOne(uc => uc.User)
+                    .WithMany(u => u.UserCourses)
+                    .HasForeignKey(uc => uc.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-        public DbSet<ProgresoFlashcard> ProgresoFlashcards { get; set; }
+                e.HasOne(uc => uc.Course)
+                    .WithMany(c => c.UserCourses)
+                    .HasForeignKey(uc => uc.CourseId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
 
-        public DbSet<ProgresoQuiz> ProgresoQuizzes { get; set; }
+            // ==================================================================
+            // COURSE
+            // ==================================================================
+            builder.Entity<Course>(e =>
+            {
+                e.HasKey(c => c.Id);
 
-        public DbSet<PreguntaQuiz> PreguntasQuiz { get; set; }
+                e.Property(c => c.Name).HasMaxLength(200).IsRequired();
+                e.Property(c => c.Description);
+                e.Property(c => c.ExamDate);
+                e.Property(c => c.ExamTime);
+                e.Property(c => c.ColorHex).HasMaxLength(7).HasDefaultValue("#3498db");
+                e.Property(c => c.IsArchived).HasDefaultValue(false);
+                e.Property(c => c.CreatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(c => c.UpdatedAt).HasDefaultValueSql("GETDATE()");
 
-        public DbSet<HistorialFlashcard> HistorialFlashcards { get; set; }
+                e.HasIndex(c => c.UserId);
+                e.HasIndex(c => c.ExamDate);
 
-        public DbSet<HistorialQuiz> HistorialQuizzes { get; set; }
+                e.HasOne(c => c.User)
+                    .WithMany(u => u.Courses)
+                    .HasForeignKey(c => c.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-        public DbSet<ProgresoArchivo> ProgresoArchivos { get; set; }
+            // ==================================================================
+            // USER COURSE EXAM PROGRESS
+            // ==================================================================
+            builder.Entity<UserCourseExamProgress>(e =>
+            {
+                e.HasKey(p => p.Id);
 
-        public DbSet<RachaUsuario> RachasUsuario { get; set; }
+                e.Property(p => p.TotalFlashcards).HasDefaultValue(0);
+                e.Property(p => p.FlashcardsStudied).HasDefaultValue(0);
+                e.Property(p => p.FlashcardsMastered).HasDefaultValue(0);
+                e.Property(p => p.TotalQuizzes).HasDefaultValue(0);
+                e.Property(p => p.QuizzesCompleted).HasDefaultValue(0);
+                e.Property(p => p.QuizzesPassed).HasDefaultValue(0);
+                e.Property(p => p.ExamReadinessScore).HasPrecision(5, 2).HasDefaultValue(0);
+                e.Property(p => p.LastCalculatedAt);
+                e.Property(p => p.CreatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(p => p.UpdatedAt).HasDefaultValueSql("GETDATE()");
 
-        public DbSet<EstadisticaIA> EstadisticasIA { get; set; }
+                e.HasIndex(p => new { p.UserId, p.CourseId }).IsUnique();
 
-        public DbSet<Auditoria> Auditorias { get; set; }
+                e.HasOne(p => p.User)
+                    .WithMany(u => u.UserCourseExamProgresses)
+                    .HasForeignKey(p => p.UserId)
+                    .OnDelete(DeleteBehavior.NoAction);
 
-        public DbSet<Curso> Cursos { get; set; }
+                e.HasOne(p => p.Course)
+                    .WithMany(c => c.UserCourseExamProgresses)
+                    .HasForeignKey(p => p.CourseId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
+            // ==================================================================
+            // EXAM READINESS SCORE
+            // ==================================================================
+            builder.Entity<ExamReadinessScore>(e =>
+            {
+                e.HasKey(s => s.Id);
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
+                e.Property(s => s.Score).HasPrecision(5, 2).IsRequired();
+                e.Property(s => s.DaysUntilExam);
+                e.Property(s => s.CalculatedAt).HasDefaultValueSql("GETDATE()");
 
-            // =========================================
-            // ROL
-            // =========================================
+                e.HasIndex(s => new { s.UserId, s.CourseId, s.CalculatedAt });
 
-            modelBuilder.Entity<Rol>()
-                .HasKey(r => r.IdRol);
+                e.HasOne(s => s.User)
+                    .WithMany(u => u.ExamReadinessScores)
+                    .HasForeignKey(s => s.UserId)
+                    .OnDelete(DeleteBehavior.NoAction);
 
-            modelBuilder.Entity<Rol>()
-                .Property(r => r.Nombre)
-                .HasMaxLength(50)
-                .IsRequired();
+                e.HasOne(s => s.Course)
+                    .WithMany(c => c.ExamReadinessScores)
+                    .HasForeignKey(s => s.CourseId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            // =========================================
-            // USUARIO
-            // =========================================
+            // ==================================================================
+            // FLASHCARD DECK
+            // ==================================================================
+            builder.Entity<FlashcardDeck>(e =>
+            {
+                e.HasKey(d => d.Id);
 
-            modelBuilder.Entity<Usuario>()
-                .HasKey(u => u.IdUsuario);
+                e.Property(d => d.Name).HasMaxLength(200).IsRequired();
+                e.Property(d => d.Description);
+                e.Property(d => d.TotalCards).HasDefaultValue(0);
+                e.Property(d => d.SpacedRepetitionEnabled).HasDefaultValue(true);
+                e.Property(d => d.CreatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(d => d.UpdatedAt).HasDefaultValueSql("GETDATE()");
 
-            modelBuilder.Entity<Usuario>()
-                .Property(u => u.Nombre)
-                .HasMaxLength(100)
-                .IsRequired();
+                e.HasIndex(d => d.CourseId);
 
-            modelBuilder.Entity<Usuario>()
-                .Property(u => u.Apellido)
-                .HasMaxLength(100);
+                e.HasOne(d => d.Course)
+                    .WithMany(c => c.FlashcardDecks)
+                    .HasForeignKey(d => d.CourseId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            modelBuilder.Entity<Usuario>()
-                .Property(u => u.Correo)
-                .HasMaxLength(150)
-                .IsRequired();
-
-            modelBuilder.Entity<Usuario>()
-                .HasIndex(u => u.Correo)
-                .IsUnique();
-
-            modelBuilder.Entity<Usuario>()
-                .Property(u => u.PasswordHash)
-                .HasMaxLength(255);
-
-            modelBuilder.Entity<Usuario>()
-                .Property(u => u.GoogleId)
-                .HasMaxLength(255);
-
-            modelBuilder.Entity<Usuario>()
-                .Property(u => u.Provider)
-                .HasMaxLength(20)
-                .HasDefaultValue("LOCAL");
-
-            modelBuilder.Entity<Usuario>()
-                .Property(u => u.FotoPerfilUrl)
-                .HasMaxLength(1000);
-
-            modelBuilder.Entity<Usuario>()
-                .Property(u => u.RachaDias)
-                .HasDefaultValue(0);
-
-            modelBuilder.Entity<Usuario>()
-                .Property(u => u.Puntos)
-                .HasDefaultValue(0);
-
-            modelBuilder.Entity<Usuario>()
-                .Property(u => u.Nivel)
-                .HasDefaultValue(1);
-
-            modelBuilder.Entity<Usuario>()
-                .Property(u => u.Estado)
-                .HasDefaultValue(true);
-
-            modelBuilder.Entity<Usuario>()
-                .HasOne(u => u.Rol)
-                .WithMany(r => r.Usuarios)
-                .HasForeignKey(u => u.IdRol)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // =========================================
-            // ARCHIVOS SUBIDOS
-            // =========================================
-
-            modelBuilder.Entity<ArchivoSubido>()
-    .HasKey(a => a.IdArchivo);
-
-            modelBuilder.Entity<ArchivoSubido>()
-                .Property(a => a.NombreArchivo)
-                .HasMaxLength(255)
-                .IsRequired();
-
-            modelBuilder.Entity<ArchivoSubido>()
-                .Property(a => a.UrlArchivo)
-                .HasMaxLength(1000)
-                .IsRequired();
-
-            modelBuilder.Entity<ArchivoSubido>()
-                .Property(a => a.TipoArchivo)
-                .HasMaxLength(50)
-                .IsRequired();
-
-            modelBuilder.Entity<ArchivoSubido>()
-                .Property(a => a.Estado)
-                .HasMaxLength(50)
-                .HasDefaultValue("ACTIVO");
-
-            modelBuilder.Entity<ArchivoSubido>()
-                .Property(a => a.TamanoMB)
-                .HasPrecision(10, 2);
-
-            // Relación Archivo -> Usuario
-            modelBuilder.Entity<ArchivoSubido>()
-                .HasOne(a => a.Usuario)
-                .WithMany(u => u.ArchivosSubidos)
-                .HasForeignKey(a => a.IdUsuario)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // Relación Archivo -> Curso
-            modelBuilder.Entity<ArchivoSubido>()
-                .HasOne(a => a.Curso)
-                .WithMany(c => c.Archivos)
-                .HasForeignKey(a => a.IdCursos)
-                .OnDelete(DeleteBehavior.NoAction);
-
-            // =========================================
-            // ANALISIS IA
-            // =========================================
-
-            modelBuilder.Entity<AnalisisIA>()
-                .HasKey(a => a.IdAnalisis);
-
-            modelBuilder.Entity<AnalisisIA>()
-                .Property(a => a.EstadoProceso)
-                .HasMaxLength(50)
-                .HasDefaultValue("PROCESANDO");
-
-            modelBuilder.Entity<AnalisisIA>()
-                .HasOne(a => a.ArchivoSubido)
-                .WithMany(a => a.AnalisisIA)
-                .HasForeignKey(a => a.IdArchivo)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // =========================================
+            // ==================================================================
             // FLASHCARD
-            // =========================================
+            // ==================================================================
+            builder.Entity<Flashcard>(e =>
+            {
+                e.HasKey(f => f.Id);
 
-            modelBuilder.Entity<Flashcard>()
-                .HasKey(f => f.IdFlashcard);
+                e.Property(f => f.Question).IsRequired();
+                e.Property(f => f.Answer).IsRequired();
+                e.Property(f => f.Difficulty).HasMaxLength(10).HasDefaultValue("medium");
+                e.Property(f => f.Tags);
+                e.Property(f => f.Position).HasDefaultValue(0);
+                e.Property(f => f.CreatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(f => f.UpdatedAt).HasDefaultValueSql("GETDATE()");
 
-            modelBuilder.Entity<Flashcard>()
-                .Property(f => f.NivelDificultad)
-                .HasMaxLength(20);
+                e.HasIndex(f => f.DeckId);
+                e.HasIndex(f => f.Difficulty);
 
-            modelBuilder.Entity<Flashcard>()
-                .Property(f => f.VecesEstudiada)
-                .HasDefaultValue(0);
+                e.HasOne(f => f.Deck)
+                    .WithMany(d => d.Flashcards)
+                    .HasForeignKey(f => f.DeckId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            modelBuilder.Entity<Flashcard>()
-                .HasOne(f => f.AnalisisIA)
-                .WithMany(a => a.Flashcards)
-                .HasForeignKey(f => f.IdAnalisis)
-                .OnDelete(DeleteBehavior.Cascade);
+            // ==================================================================
+            // FLASHCARD STUDY SESSION
+            // ==================================================================
+            builder.Entity<FlashcardStudySession>(e =>
+            {
+                e.HasKey(s => s.Id);
 
-            // =========================================
+                e.Property(s => s.StartedAt).IsRequired();
+                e.Property(s => s.CardsReviewed).HasDefaultValue(0);
+                e.Property(s => s.CardsKnown).HasDefaultValue(0);
+                e.Property(s => s.CardsUnknown).HasDefaultValue(0);
+                e.Property(s => s.SessionType).HasMaxLength(20).HasDefaultValue("normal");
+
+                e.HasIndex(s => new { s.UserId, s.DeckId, s.StartedAt });
+
+                e.HasOne(s => s.User)
+                    .WithMany(u => u.FlashcardStudySessions)
+                    .HasForeignKey(s => s.UserId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                e.HasOne(s => s.Deck)
+                    .WithMany(d => d.FlashcardStudySessions)
+                    .HasForeignKey(s => s.DeckId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ==================================================================
+            // FLASHCARD REVIEW
+            // ==================================================================
+            builder.Entity<FlashcardReview>(e =>
+            {
+                e.HasKey(r => r.Id);
+
+                e.Property(r => r.KnewIt).IsRequired();
+                e.Property(r => r.ResponseTimeMs);
+                e.Property(r => r.EaseFactor).HasPrecision(4, 2).HasDefaultValue(2.5m);
+                e.Property(r => r.IntervalDays).HasDefaultValue(1);
+                e.Property(r => r.NextReviewDate).IsRequired();
+                e.Property(r => r.ReviewedAt).HasDefaultValueSql("GETDATE()");
+
+                e.HasIndex(r => new { r.UserId, r.NextReviewDate });
+                e.HasIndex(r => new { r.FlashcardId, r.UserId });
+
+                e.HasOne(r => r.Flashcard)
+                    .WithMany(f => f.FlashcardReviews)
+                    .HasForeignKey(r => r.FlashcardId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                e.HasOne(r => r.Session)
+                    .WithMany(s => s.FlashcardReviews)
+                    .HasForeignKey(r => r.SessionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(r => r.User)
+                    .WithMany(u => u.FlashcardReviews)
+                    .HasForeignKey(r => r.UserId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            // ==================================================================
+            // SPACED REPETITION SETTING
+            // ==================================================================
+            builder.Entity<SpacedRepetitionSetting>(e =>
+            {
+                e.HasKey(s => s.Id);
+
+                e.Property(s => s.InitialIntervalDays).HasDefaultValue(1);
+                e.Property(s => s.MaxIntervalDays).HasDefaultValue(365);
+                e.Property(s => s.EasyBonus).HasPrecision(3, 2).HasDefaultValue(1.30m);
+                e.Property(s => s.HardPenalty).HasPrecision(3, 2).HasDefaultValue(1.20m);
+                e.Property(s => s.CreatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(s => s.UpdatedAt).HasDefaultValueSql("GETDATE()");
+
+                e.HasIndex(s => new { s.UserId, s.DeckId }).IsUnique().HasFilter("[DeckId] IS NOT NULL");
+
+                e.HasOne(s => s.User)
+                    .WithMany(u => u.SpacedRepetitionSettings)
+                    .HasForeignKey(s => s.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(s => s.Deck)
+                    .WithMany(d => d.SpacedRepetitionSettings)
+                    .HasForeignKey(s => s.DeckId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            // ==================================================================
+            // USER PROGRESS FLASHCARD
+            // ==================================================================
+            builder.Entity<UserProgressFlashcard>(e =>
+            {
+                e.HasKey(p => p.Id);
+
+                e.Property(p => p.TotalStudySessions).HasDefaultValue(0);
+                e.Property(p => p.TotalReviews).HasDefaultValue(0);
+                e.Property(p => p.CardsMastered).HasDefaultValue(0);
+                e.Property(p => p.CardsInLearning).HasDefaultValue(0);
+                e.Property(p => p.AverageEaseFactor).HasPrecision(4, 2).HasDefaultValue(2.50m);
+                e.Property(p => p.LastStudiedAt);
+                e.Property(p => p.CreatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(p => p.UpdatedAt).HasDefaultValueSql("GETDATE()");
+
+                e.HasIndex(p => new { p.UserId, p.DeckId }).IsUnique();
+
+                e.HasOne(p => p.User)
+                    .WithMany(u => u.UserProgressFlashcards)
+                    .HasForeignKey(p => p.UserId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                e.HasOne(p => p.Deck)
+                    .WithMany(d => d.UserProgressFlashcards)
+                    .HasForeignKey(p => p.DeckId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ==================================================================
             // QUIZ
-            // =========================================
+            // ==================================================================
+            builder.Entity<Quiz>(e =>
+            {
+                e.HasKey(q => q.Id);
 
-            modelBuilder.Entity<Quiz>()
-                .HasKey(q => q.IdQuiz);
+                e.Property(q => q.Title).HasMaxLength(200).IsRequired();
+                e.Property(q => q.Description);
+                e.Property(q => q.TotalQuestions).HasDefaultValue(0);
+                e.Property(q => q.PassingScore).HasPrecision(5, 2).HasDefaultValue(70.00m);
+                e.Property(q => q.TimeLimitMinutes);
+                e.Property(q => q.ShuffleQuestions).HasDefaultValue(false);
+                e.Property(q => q.ShuffleOptions).HasDefaultValue(false);
+                e.Property(q => q.AttemptsAllowed).HasDefaultValue(0);
+                e.Property(q => q.CreatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(q => q.UpdatedAt).HasDefaultValueSql("GETDATE()");
 
-            modelBuilder.Entity<Quiz>()
-                .Property(q => q.Titulo)
-                .HasMaxLength(255)
-                .IsRequired();
+                e.HasIndex(q => q.CourseId);
 
-            modelBuilder.Entity<Quiz>()
-                .HasOne(q => q.AnalisisIA)
-                .WithMany(a => a.Quizzes)
-                .HasForeignKey(q => q.IdAnalisis)
-                .OnDelete(DeleteBehavior.Cascade);
+                e.HasOne(q => q.Course)
+                    .WithMany(c => c.Quizzes)
+                    .HasForeignKey(q => q.CourseId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            // =========================================
-            // PREGUNTA QUIZ
-            // =========================================
+            // ==================================================================
+            // QUIZ QUESTION
+            // ==================================================================
+            builder.Entity<QuizQuestion>(e =>
+            {
+                e.HasKey(q => q.Id);
 
-            modelBuilder.Entity<PreguntaQuiz>()
-                .HasKey(p => p.IdPreguntaQuiz);
+                e.Property(q => q.QuestionText).IsRequired();
+                e.Property(q => q.QuestionType).HasMaxLength(20).IsRequired();
+                e.Property(q => q.Explanation);
+                e.Property(q => q.Points).HasPrecision(5, 2).HasDefaultValue(1.00m);
+                e.Property(q => q.OrderPosition).HasDefaultValue(0);
+                e.Property(q => q.CreatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(q => q.UpdatedAt).HasDefaultValueSql("GETDATE()");
 
-            modelBuilder.Entity<PreguntaQuiz>()
-                .Property(p => p.OpcionA)
-                .HasMaxLength(300);
+                e.HasIndex(q => q.QuizId);
 
-            modelBuilder.Entity<PreguntaQuiz>()
-                .Property(p => p.OpcionB)
-                .HasMaxLength(300);
+                e.HasOne(q => q.Quiz)
+                    .WithMany(qz => qz.QuizQuestions)
+                    .HasForeignKey(q => q.QuizId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            modelBuilder.Entity<PreguntaQuiz>()
-                .Property(p => p.OpcionC)
-                .HasMaxLength(300);
+            // ==================================================================
+            // QUIZ OPTION
+            // ==================================================================
+            builder.Entity<QuizOption>(e =>
+            {
+                e.HasKey(o => o.Id);
 
-            modelBuilder.Entity<PreguntaQuiz>()
-                .Property(p => p.OpcionD)
-                .HasMaxLength(300);
+                e.Property(o => o.OptionText).IsRequired();
+                e.Property(o => o.IsCorrect).IsRequired();
+                e.Property(o => o.OrderPosition).HasDefaultValue(0);
+                e.Property(o => o.CreatedAt).HasDefaultValueSql("GETDATE()");
 
-            modelBuilder.Entity<PreguntaQuiz>()
-                .HasOne(p => p.Quiz)
-                .WithMany(q => q.PreguntasQuiz)
-                .HasForeignKey(p => p.IdQuiz)
-                .OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(o => o.QuestionId);
 
-            // =========================================
-            // HISTORIAL FLASHCARD
-            // =========================================
+                e.HasOne(o => o.Question)
+                    .WithMany(q => q.QuizOptions)
+                    .HasForeignKey(o => o.QuestionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            modelBuilder.Entity<HistorialFlashcard>()
-                .HasKey(h => h.IdHistorialFlashcard);
+            // ==================================================================
+            // QUIZ ATTEMPT
+            // ==================================================================
+            builder.Entity<QuizAttempt>(e =>
+            {
+                e.HasKey(a => a.Id);
 
-            modelBuilder.Entity<HistorialFlashcard>()
-                .HasOne(h => h.Usuario)
-                .WithMany(u => u.HistorialFlashcards)
-                .HasForeignKey(h => h.IdUsuario)
-                .OnDelete(DeleteBehavior.NoAction);
+                e.Property(a => a.StartedAt).IsRequired();
+                e.Property(a => a.ScorePercentage).HasPrecision(5, 2);
+                e.Property(a => a.Passed);
+                e.Property(a => a.TimeSpentSeconds);
+                e.Property(a => a.CreatedAt).HasDefaultValueSql("GETDATE()");
 
-            modelBuilder.Entity<HistorialFlashcard>()
-                .HasOne(h => h.Flashcard)
-                .WithMany(f => f.HistorialFlashcards)
-                .HasForeignKey(h => h.IdFlashcard)
-                .OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(a => new { a.UserId, a.QuizId });
 
-            // =========================================
-            // HISTORIAL QUIZ
-            // =========================================
+                e.HasOne(a => a.User)
+                    .WithMany(u => u.QuizAttempts)
+                    .HasForeignKey(a => a.UserId)
+                    .OnDelete(DeleteBehavior.NoAction);
 
-            modelBuilder.Entity<HistorialQuiz>()
-                .HasKey(h => h.IdHistorialQuiz);
+                e.HasOne(a => a.Quiz)
+                    .WithMany(q => q.QuizAttempts)
+                    .HasForeignKey(a => a.QuizId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            modelBuilder.Entity<HistorialQuiz>()
-                .Property(h => h.Puntaje)
-                .HasPrecision(5, 2);
+            // ==================================================================
+            // QUIZ ANSWER
+            // ==================================================================
+            builder.Entity<QuizAnswer>(e =>
+            {
+                e.HasKey(a => a.Id);
 
-            modelBuilder.Entity<HistorialQuiz>()
-                .HasOne(h => h.Usuario)
-                .WithMany(u => u.HistorialQuizzes)
-                .HasForeignKey(h => h.IdUsuario)
-                .OnDelete(DeleteBehavior.NoAction);
+                e.Property(a => a.ShortAnswerText);
+                e.Property(a => a.IsCorrect).IsRequired();
+                e.Property(a => a.PointsEarned).HasPrecision(5, 2).HasDefaultValue(0);
+                e.Property(a => a.AnsweredAt).HasDefaultValueSql("GETDATE()");
 
-            modelBuilder.Entity<HistorialQuiz>()
-                .HasOne(h => h.Quiz)
-                .WithMany(q => q.HistorialQuizzes)
-                .HasForeignKey(h => h.IdQuiz)
-                .OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(a => a.AttemptId);
+                e.HasIndex(a => a.QuestionId);
 
-            // =========================================
-            // PROGRESO ARCHIVO
-            // =========================================
+                e.HasOne(a => a.Attempt)
+                    .WithMany(at => at.QuizAnswers)
+                    .HasForeignKey(a => a.AttemptId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<ProgresoArchivo>()
-                .HasKey(p => p.IdProgresoArchivo);
+                e.HasOne(a => a.Question)
+                    .WithMany(q => q.QuizAnswers)
+                    .HasForeignKey(a => a.QuestionId)
+                    .OnDelete(DeleteBehavior.NoAction);
 
-            modelBuilder.Entity<ProgresoArchivo>()
-                .Property(p => p.PorcentajeProgreso)
-                .HasPrecision(5, 2);
+                e.HasOne(a => a.SelectedOption)
+                    .WithMany(o => o.QuizAnswers)
+                    .HasForeignKey(a => a.SelectedOptionId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
 
-            modelBuilder.Entity<ProgresoArchivo>()
-                .Property(p => p.Completado)
-                .HasDefaultValue(false);
+            // ==================================================================
+            // USER PROGRESS QUIZ
+            // ==================================================================
+            builder.Entity<UserProgressQuiz>(e =>
+            {
+                e.HasKey(p => p.Id);
 
-            modelBuilder.Entity<ProgresoArchivo>()
-                .HasOne(p => p.Usuario)
-                .WithMany(u => u.ProgresoArchivos)
-                .HasForeignKey(p => p.IdUsuario)
-                .OnDelete(DeleteBehavior.NoAction);
+                e.Property(p => p.TotalAttempts).HasDefaultValue(0);
+                e.Property(p => p.BestScore).HasPrecision(5, 2).HasDefaultValue(0);
+                e.Property(p => p.AverageScore).HasPrecision(5, 2).HasDefaultValue(0);
+                e.Property(p => p.LastAttemptAt);
+                e.Property(p => p.PassedCount).HasDefaultValue(0);
+                e.Property(p => p.CreatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(p => p.UpdatedAt).HasDefaultValueSql("GETDATE()");
 
-            modelBuilder.Entity<ProgresoArchivo>()
-                .HasOne(p => p.ArchivoSubido)
-                .WithMany()
-                .HasForeignKey(p => p.IdArchivo)
-                .OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(p => new { p.UserId, p.QuizId }).IsUnique();
 
-            // =====================================
-            // PROGRESO FLASHCARD
-            // =====================================
+                e.HasOne(p => p.User)
+                    .WithMany(u => u.UserProgressQuizzes)
+                    .HasForeignKey(p => p.UserId)
+                    .OnDelete(DeleteBehavior.NoAction);
 
-            modelBuilder.Entity<ProgresoFlashcard>()
-                .HasOne(p => p.Usuario)
-                .WithMany()
-                .HasForeignKey(p => p.IdUsuario)
-                .OnDelete(DeleteBehavior.Restrict);
+                e.HasOne(p => p.Quiz)
+                    .WithMany(q => q.UserProgressQuizzes)
+                    .HasForeignKey(p => p.QuizId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            modelBuilder.Entity<ProgresoFlashcard>()
-                .HasOne(p => p.Flashcard)
-                .WithMany()
-                .HasForeignKey(p => p.IdFlashcard)
-                .OnDelete(DeleteBehavior.Cascade);
+            // ==================================================================
+            // FILE UPLOAD
+            // ==================================================================
+            builder.Entity<FileUpload>(e =>
+            {
+                e.HasKey(f => f.Id);
 
-            // =====================================
-            // PROGRESO QUIZ
-            // =====================================
+                e.Property(f => f.OriginalFilename).HasMaxLength(255).IsRequired();
+                e.Property(f => f.FilePath).HasMaxLength(500).IsRequired();
+                e.Property(f => f.FileSizeBytes).IsRequired();
+                e.Property(f => f.FileType).HasMaxLength(10).IsRequired();
+                e.Property(f => f.MimeType).HasMaxLength(100).IsRequired();
+                e.Property(f => f.UploadedAt).HasDefaultValueSql("GETDATE()");
 
-            modelBuilder.Entity<ProgresoQuiz>()
-                .HasOne(p => p.Usuario)
-                .WithMany()
-                .HasForeignKey(p => p.IdUsuario)
-                .OnDelete(DeleteBehavior.Restrict);
+                e.HasIndex(f => f.UserId);
 
-            modelBuilder.Entity<ProgresoQuiz>()
-                .HasOne(p => p.Quiz)
-                .WithMany()
-                .HasForeignKey(p => p.IdQuiz)
-                .OnDelete(DeleteBehavior.Cascade);
+                e.HasOne(f => f.User)
+                    .WithMany(u => u.FileUploads)
+                    .HasForeignKey(f => f.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            // =========================================
-            // RACHA USUARIO
-            // =========================================
+            // ==================================================================
+            // GENERATED CONTENT
+            // ==================================================================
+            builder.Entity<GeneratedContent>(e =>
+            {
+                e.HasKey(g => g.Id);
 
-            modelBuilder.Entity<RachaUsuario>()
-                .HasKey(r => r.IdRacha);
+                e.Property(g => g.ContentType).HasMaxLength(20).IsRequired();
+                e.Property(g => g.GeneratedEntityId).IsRequired();
+                e.Property(g => g.TopicSpecified).HasMaxLength(200);
+                e.Property(g => g.GenerationConfig);
+                e.Property(g => g.CreatedAt).HasDefaultValueSql("GETDATE()");
 
-            modelBuilder.Entity<RachaUsuario>()
-                .HasOne(r => r.Usuario)
-                .WithMany(u => u.RachasUsuario)
-                .HasForeignKey(r => r.IdUsuario)
-                .OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(g => g.FileUploadId);
+                e.HasIndex(g => new { g.GeneratedEntityId, g.ContentType });
 
-            // =========================================
-            // ESTADISTICA IA
-            // =========================================
+                e.HasOne(g => g.FileUpload)
+                    .WithMany(f => f.GeneratedContents)
+                    .HasForeignKey(g => g.FileUploadId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<EstadisticaIA>()
-                .HasKey(e => e.IdEstadistica);
+                e.HasOne(g => g.Course)
+                    .WithMany(c => c.GeneratedContents)
+                    .HasForeignKey(g => g.CourseId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
 
-            modelBuilder.Entity<EstadisticaIA>()
-                .Property(e => e.PromedioPuntaje)
-                .HasPrecision(5, 2);
+            // ==================================================================
+            // STUDY SCHEDULE
+            // ==================================================================
+            builder.Entity<StudySchedule>(e =>
+            {
+                e.HasKey(s => s.Id);
 
-            modelBuilder.Entity<EstadisticaIA>()
-                .HasOne(e => e.Usuario)
-                .WithOne(u => u.EstadisticaIA)
-                .HasForeignKey<EstadisticaIA>(e => e.IdUsuario)
-                .OnDelete(DeleteBehavior.Cascade);
+                e.Property(s => s.Title).HasMaxLength(200).IsRequired();
+                e.Property(s => s.StartDatetime).IsRequired();
+                e.Property(s => s.EndDatetime).IsRequired();
+                e.Property(s => s.IsCompleted).HasDefaultValue(false);
+                e.Property(s => s.NotificationSent).HasDefaultValue(false);
+                e.Property(s => s.CreatedAt).HasDefaultValueSql("GETDATE()");
+                e.Property(s => s.UpdatedAt).HasDefaultValueSql("GETDATE()");
 
-            // =========================================
-            // AUDITORIA
-            // =========================================
+                e.HasIndex(s => new { s.UserId, s.StartDatetime });
 
-            modelBuilder.Entity<Auditoria>()
-                .HasKey(a => a.IdAuditoria);
+                e.HasOne(s => s.User)
+                    .WithMany(u => u.StudySchedules)
+                    .HasForeignKey(s => s.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            modelBuilder.Entity<Auditoria>()
-                .Property(a => a.Accion)
-                .HasMaxLength(100)
-                .IsRequired();
+            // ==================================================================
+            // SCHEDULE INTERVAL
+            // ==================================================================
+            builder.Entity<ScheduleInterval>(e =>
+            {
+                e.HasKey(i => i.Id);
 
-            modelBuilder.Entity<Auditoria>()
-                .Property(a => a.Descripcion)
-                .HasMaxLength(500);
+                e.Property(i => i.IntervalType).HasMaxLength(15).IsRequired();
+                e.Property(i => i.DurationMinutes).IsRequired();
+                e.Property(i => i.OrderPosition).HasDefaultValue(0);
 
-            modelBuilder.Entity<Auditoria>()
-                .Property(a => a.IpAddress)
-                .HasMaxLength(100);
+                e.HasIndex(i => i.ScheduleId);
 
-            modelBuilder.Entity<Auditoria>()
-                .HasOne(a => a.Usuario)
-                .WithMany(u => u.Auditorias)
-                .HasForeignKey(a => a.IdUsuario)
-                .OnDelete(DeleteBehavior.SetNull);
+                e.HasOne(i => i.Schedule)
+                    .WithMany(s => s.ScheduleIntervals)
+                    .HasForeignKey(i => i.ScheduleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            // =========================================
-            // CURSO
-            // =========================================
+            // ==================================================================
+            // SCHEDULE CONTENT
+            // ==================================================================
+            builder.Entity<ScheduleContent>(e =>
+            {
+                e.HasKey(sc => sc.Id);
 
-            modelBuilder.Entity<Curso>()
-                .HasKey(c => c.IdCurso);
+                e.Property(sc => sc.ContentType).HasMaxLength(20).IsRequired();
+                e.Property(sc => sc.ContentId).IsRequired();
+                e.Property(sc => sc.EstimatedMinutes);
+                e.Property(sc => sc.Completed).HasDefaultValue(false);
 
-            modelBuilder.Entity<Curso>()
-                .Property(c => c.Nombre)
-                .HasMaxLength(255)
-                .IsRequired();
+                e.HasIndex(sc => sc.ScheduleId);
+                e.HasIndex(sc => new { sc.ContentType, sc.ContentId });
 
-            modelBuilder.Entity<Curso>()
-                .Property(c => c.Descripcion)
-                .HasMaxLength(1000);
+                e.HasOne(sc => sc.Schedule)
+                    .WithMany(s => s.ScheduleContents)
+                    .HasForeignKey(sc => sc.ScheduleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
 
-            modelBuilder.Entity<Curso>()
-                .Property(c => c.FechaCreacion)
-                .HasDefaultValueSql("GETDATE()");
+            // ==================================================================
+            // NOTIFICATION
+            // ==================================================================
+            builder.Entity<Notification>(e =>
+            {
+                e.HasKey(n => n.Id);
 
-            // Relación Curso -> Usuario
-            modelBuilder.Entity<Curso>()
-                .HasOne(c => c.Usuario)
-                .WithMany(u => u.Cursos)
-                .HasForeignKey(c => c.IdUsuario)
-                .OnDelete(DeleteBehavior.Cascade);
+                e.Property(n => n.Type).HasMaxLength(30).IsRequired();
+                e.Property(n => n.Title).HasMaxLength(200).IsRequired();
+                e.Property(n => n.Message).IsRequired();
+                e.Property(n => n.RelatedEntityType).HasMaxLength(50);
+                e.Property(n => n.IsRead).HasDefaultValue(false);
+                e.Property(n => n.CreatedAt).HasDefaultValueSql("GETDATE()");
 
-            // =========================================
-            // SEED ROLES
-            // =========================================
+                e.HasIndex(n => new { n.UserId, n.IsRead, n.ScheduledFor });
 
-            modelBuilder.Entity<Rol>().HasData(
-                new Rol
-                {
-                    IdRol = 1,
-                    Nombre = "ADMIN"
-                },
-                new Rol
-                {
-                    IdRol = 2,
-                    Nombre = "USER"
-                }
-            );
+                e.HasOne(n => n.User)
+                    .WithMany(u => u.Notifications)
+                    .HasForeignKey(n => n.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ==================================================================
+            // SYSTEM CONFIGURATION
+            // ==================================================================
+            builder.Entity<SystemConfiguration>(e =>
+            {
+                e.HasKey(sc => sc.Id);
+
+                e.Property(sc => sc.ConfigKey).HasMaxLength(100).IsRequired();
+                e.HasIndex(sc => sc.ConfigKey).IsUnique();
+                e.Property(sc => sc.ConfigValue).IsRequired();
+                e.Property(sc => sc.UpdatedAt).HasDefaultValueSql("GETDATE()");
+
+                e.HasOne(sc => sc.UpdatedByUser)
+                    .WithMany(u => u.SystemConfigurations)
+                    .HasForeignKey(sc => sc.UpdatedBy)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // ==================================================================
+            // ACTIVITY LOG
+            // ==================================================================
+            builder.Entity<ActivityLog>(e =>
+            {
+                e.HasKey(al => al.Id);
+
+                e.Property(al => al.Action).HasMaxLength(100).IsRequired();
+                e.Property(al => al.EntityType).HasMaxLength(50);
+                e.Property(al => al.IpAddress).HasMaxLength(45);
+                e.Property(al => al.CreatedAt).HasDefaultValueSql("GETDATE()");
+
+                e.HasIndex(al => new { al.UserId, al.CreatedAt });
+                e.HasIndex(al => new { al.EntityType, al.EntityId });
+
+                e.HasOne(al => al.User)
+                    .WithMany(u => u.ActivityLogs)
+                    .HasForeignKey(al => al.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
         }
     }
 }

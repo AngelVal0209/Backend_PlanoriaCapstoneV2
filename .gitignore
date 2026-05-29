@@ -492,3 +492,6 @@ dotnet_pid.txt
 # User upload directory files (keep folder, ignore files)
 Backend_PlanoriaCapstone/wwwroot/assets/uploads/*
 !Backend_PlanoriaCapstone/wwwroot/assets/uploads/.gitkeep
+
+# Frontend documentation / design files
+FeatsByFrontEnd/
