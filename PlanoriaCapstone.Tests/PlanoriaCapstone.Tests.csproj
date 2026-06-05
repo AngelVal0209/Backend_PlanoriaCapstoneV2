@@ -19,4 +19,12 @@
 		<ProjectReference Include="..\Backend_PlanoriaCapstone\Backend_PlanoriaCapstone.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="AuthTests\" />
+	  <Folder Include="FlashcardTests\" />
+	  <Folder Include="IntegrationsTests\" />
+	  <Folder Include="ProgresoTests\" />
+	  <Folder Include="QuizTests\" />
+	</ItemGroup>
+
 </Project>

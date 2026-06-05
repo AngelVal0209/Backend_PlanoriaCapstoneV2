@@ -1,11 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using PlanoriaCapstone.Bll.Interface;
-using PlanoriaCapstone.Bll.Service;
 using PlanoriaCapstone.Dal;
-using PlanoriaCapstone.Dal.Interface;
-using PlanoriaCapstone.Dal.Repository;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -22,29 +18,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // SERVICES
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-builder.Services.AddScoped<IArchivoService, ArchivoService>();
-builder.Services.AddScoped<IFlashcardService, FlashcardService>();
-builder.Services.AddScoped<IQuizService, QuizService>();
-builder.Services.AddScoped<IProgresoService, ProgresoService>();
-builder.Services.AddScoped<IIAService, GeminiService>();
-builder.Services.AddScoped<IImageService, ImageService>();
-builder.Services.AddScoped<ICursoService,CursoService>();
+
 
 builder.Services.AddHttpClient();
 
 // REPOSITORIES
-builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-builder.Services.AddScoped<IArchivoRepository, ArchivoRepository>();
-<<<<<<< HEAD
+
 builder.Services.AddScoped<IFlashcardRepository, FlashcardRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
-builder.Services.AddScoped<IProgresoRepository, ProgresoRepository>();
-builder.Services.AddScoped<ICursoRepository,CursoRepository>();
-=======
->>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
+
+// 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 
 // CONTROLLERS
 builder.Services.AddControllers()
@@ -138,9 +121,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-<<<<<<< HEAD
 // =====================================
-=======
+
 // AUTO-MIGRATE (with retry for SQL Server startup)
 using (var scope = app.Services.CreateScope())
 {
@@ -160,7 +142,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
->>>>>>> 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
+// 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 // SWAGGER
 // =====================================
 
