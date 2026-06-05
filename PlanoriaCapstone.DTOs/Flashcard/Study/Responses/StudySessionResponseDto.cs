@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,8 +8,8 @@ namespace PlanoriaCapstone.DTOs.Flashcards.Study.Responses
 {
     public class StudySessionResponseDto
     {
-        public Guid Id { get; set; }
-        public Guid DeckId { get; set; }
+        public int Id { get; set; }
+        public int DeckId { get; set; }
         public string DeckName { get; set; }
         public DateTime StartedAt { get; set; }
         public DateTime? EndedAt { get; set; }

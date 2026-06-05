@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,8 +8,8 @@ namespace PlanoriaCapstone.DTOs.IA.Requests
 {
     public class BatchGenerateRequestDto
     {
-        public List<Guid> Files { get; set; }
+        public List<int> Files { get; set; }
         public string ContentType { get; set; }
-        public Guid TargetCourseId { get; set; }
+        public int TargetCourseId { get; set; }
     }
 }

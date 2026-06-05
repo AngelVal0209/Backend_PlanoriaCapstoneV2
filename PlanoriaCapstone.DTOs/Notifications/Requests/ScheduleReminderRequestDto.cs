@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.Notifications.Requests
 {
     public class ScheduleReminderRequestDto
     {
-        public Guid ScheduleId { get; set; }
+        public int ScheduleId { get; set; }
         public int RemindMinutesBefore { get; set; }
     }
 }

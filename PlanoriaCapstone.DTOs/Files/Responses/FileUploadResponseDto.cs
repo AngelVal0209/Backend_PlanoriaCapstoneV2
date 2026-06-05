@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.Files.Responses
 {
     public class FileUploadResponseDto
     {
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         public string OriginalFilename { get; set; }
         public long FileSize { get; set; }
         public string FileType { get; set; }

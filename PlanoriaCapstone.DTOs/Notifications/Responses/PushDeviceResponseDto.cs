@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.Notifications.Responses
 {
     public class PushDeviceResponseDto
     {
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         public string Platform { get; set; }
         public string DeviceName { get; set; }
         public bool IsActive { get; set; }

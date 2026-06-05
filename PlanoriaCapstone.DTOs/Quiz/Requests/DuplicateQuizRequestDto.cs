@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +9,6 @@ namespace PlanoriaCapstone.DTOs.Quiz.Requests
     public class DuplicateQuizRequestDto
     {
         public string NewTitle { get; set; }
-        public Guid TargetCourseId { get; set; }
+        public int TargetCourseId { get; set; }
     }
 }

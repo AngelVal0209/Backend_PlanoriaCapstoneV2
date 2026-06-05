@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.Files.Requests
 {
     public class RegenerateContentRequestDto
     {
-        public Guid GeneratedContentId { get; set; }
+        public int GeneratedContentId { get; set; }
         public string AdjustComplexity { get; set; }
         public List<string> FocusOnTopics { get; set; }
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.Progress.Responses.Flashcards
 {
     public class FlashcardMasteryResponseDto
     {
-        public Guid FlashcardId { get; set; }
+        public int FlashcardId { get; set; }
         public string Question { get; set; }
         public decimal EaseFactor { get; set; }
         public int RepetitionCount { get; set; }

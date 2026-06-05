@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,9 +8,9 @@ namespace PlanoriaCapstone.DTOs.Progress.Requests
 {
     public class GetProgressRequestDto
     {
-        public Guid? CourseId { get; set; }
-        public Guid? DeckId { get; set; }
-        public Guid? QuizId { get; set; }
+        public int? CourseId { get; set; }
+        public int? DeckId { get; set; }
+        public int? QuizId { get; set; }
         public DateTime? DateFrom { get; set; }
         public DateTime? DateTo { get; set; }
     }

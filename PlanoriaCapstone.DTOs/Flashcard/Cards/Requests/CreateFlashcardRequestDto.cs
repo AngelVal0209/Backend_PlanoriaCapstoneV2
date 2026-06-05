@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,7 +13,7 @@ namespace PlanoriaCapstone.DTOs.Flashcards.Cards.Requests
         public string Hint { get; set; }
         public string Difficulty { get; set; } = "medium";
         public List<string> Tags { get; set; }
-        public Guid DeckId { get; set; }
+        public int DeckId { get; set; }
         public int Position { get; set; }
     }
 }

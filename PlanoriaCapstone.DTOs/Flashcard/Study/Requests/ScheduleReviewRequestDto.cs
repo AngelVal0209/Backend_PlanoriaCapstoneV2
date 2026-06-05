@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.Flashcards.Study.Requests
 {
     public class ScheduleReviewRequestDto
     {
-        public Guid FlashcardId { get; set; }
+        public int FlashcardId { get; set; }
         public DateTime? ForceDate { get; set; }
     }
 }

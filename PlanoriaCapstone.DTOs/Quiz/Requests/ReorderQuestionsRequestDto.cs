@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.Quiz.Requests
 {
     public class QuestionOrderItem
     {
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         public int OrderPosition { get; set; }
     }
 

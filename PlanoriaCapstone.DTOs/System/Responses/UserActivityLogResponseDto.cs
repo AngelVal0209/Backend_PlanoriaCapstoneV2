@@ -1,4 +1,4 @@
-﻿using PlanoriaCapstone.DTOs.Users.Responses;
+using PlanoriaCapstone.DTOs.Users.Responses;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +12,7 @@ namespace PlanoriaCapstone.DTOs.System.Responses
         public UserResponseDto User { get; set; }
         public string Action { get; set; }
         public string EntityType { get; set; }
-        public Guid? EntityId { get; set; }
+        public int? EntityId { get; set; }
         public string Details { get; set; }
         public string IpAddress { get; set; }
         public string UserAgent { get; set; }

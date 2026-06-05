@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.Progress.Responses.Quizzes
 {
     public class QuizProgressResponseDto
     {
-        public Guid QuizId { get; set; }
+        public int QuizId { get; set; }
         public string QuizTitle { get; set; }
         public int TotalAttempts { get; set; }
         public decimal? BestScore { get; set; }

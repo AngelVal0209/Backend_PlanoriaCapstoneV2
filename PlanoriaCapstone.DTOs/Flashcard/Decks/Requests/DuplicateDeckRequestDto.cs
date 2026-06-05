@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +9,6 @@ namespace PlanoriaCapstone.DTOs.Flashcards.Decks.Requests
     public class DuplicateDeckRequestDto
     {
         public string NewName { get; set; }
-        public Guid TargetCourseId { get; set; }
+        public int TargetCourseId { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +8,6 @@ namespace PlanoriaCapstone.DTOs.Flashcards.Study.Requests
 {
     public class EndStudySessionRequestDto
     {
-        public Guid SessionId { get; set; }
+        public int SessionId { get; set; }
     }
 }

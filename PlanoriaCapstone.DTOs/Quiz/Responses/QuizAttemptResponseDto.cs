@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,8 +8,8 @@ namespace PlanoriaCapstone.DTOs.Quiz.Responses
 {
     public class QuizAttemptResponseDto
     {
-        public Guid Id { get; set; }
-        public Guid QuizId { get; set; }
+        public int Id { get; set; }
+        public int QuizId { get; set; }
         public string QuizTitle { get; set; }
         public DateTime StartedAt { get; set; }
         public DateTime? CompletedAt { get; set; }

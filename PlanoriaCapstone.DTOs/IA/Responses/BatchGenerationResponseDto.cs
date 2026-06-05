@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.IA.Responses
 {
     public class BatchGenerationResponseDto
     {
-        public Guid BatchId { get; set; }
+        public int BatchId { get; set; }
         public int TotalFiles { get; set; }
         public int Successful { get; set; }
         public int Failed { get; set; }

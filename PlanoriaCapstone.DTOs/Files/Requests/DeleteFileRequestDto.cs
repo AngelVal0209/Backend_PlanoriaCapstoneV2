@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.Files.Requests
 {
     public class DeleteFileRequestDto
     {
-        public Guid FileId { get; set; }
+        public int FileId { get; set; }
         public bool Permanent { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +12,6 @@ namespace PlanoriaCapstone.DTOs.Files.Requests
     {
         public IFormFile File { get; set; }
         public string FileType { get; set; }
-        public Guid CourseId { get; set; }
+        public int CourseId { get; set; }
     }
 }

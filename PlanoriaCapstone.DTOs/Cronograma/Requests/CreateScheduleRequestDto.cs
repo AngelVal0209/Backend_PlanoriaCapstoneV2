@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,7 +11,7 @@ namespace PlanoriaCapstone.DTOs.Cronograma.Requests
         public string Title { get; set; }
         public DateTime StartDateTime { get; set; }
         public DateTime EndDateTime { get; set; }
-        public List<Guid> CourseIds { get; set; }
+        public List<int> CourseIds { get; set; }
         public List<CreateIntervalRequestDto> Intervals { get; set; }
         public List<ScheduleContentRequestDto> Content { get; set; }
     }

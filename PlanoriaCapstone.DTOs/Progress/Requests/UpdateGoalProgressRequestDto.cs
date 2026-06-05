@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.Progress.Requests
 {
     public class UpdateGoalProgressRequestDto
     {
-        public Guid GoalId { get; set; }
+        public int GoalId { get; set; }
         public int CurrentValue { get; set; }
         public string Status { get; set; }
     }

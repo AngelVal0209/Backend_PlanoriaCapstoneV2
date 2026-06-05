@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using PlanoriaCapstone.Bll.Interface;
+using PlanoriaCapstone.Bll.Service;
 using PlanoriaCapstone.Dal;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -23,9 +25,42 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddHttpClient();
 
 // REPOSITORIES
-
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+builder.Services.AddScoped<IUserCourseExamProgressRepository, UserCourseExamProgressRepository>();
 builder.Services.AddScoped<IFlashcardRepository, FlashcardRepository>();
+builder.Services.AddScoped<IFlashcardDeckRepository, FlashcardDeckRepository>();
+builder.Services.AddScoped<IUserProgressFlashcardRepository, UserProgressFlashcardRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+builder.Services.AddScoped<IQuizAttemptRepository, QuizAttemptRepository>();
+builder.Services.AddScoped<IUserProgressQuizRepository, UserProgressQuizRepository>();
+builder.Services.AddScoped<IFileUploadRepository, FileUploadRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IStudyScheduleRepository, StudyScheduleRepository>();
+builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+
+// BLL SERVICES
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddScoped<IFlashcardDeckService, FlashcardDeckService>();
+builder.Services.AddScoped<IFlashcardService, FlashcardService>();
+builder.Services.AddScoped<IFlashcardStudyService, FlashcardStudyService>();
+builder.Services.AddScoped<IQuizService, QuizService>();
+builder.Services.AddScoped<IQuizAttemptService, QuizAttemptService>();
+builder.Services.AddScoped<IAiGenerationService, AiGenerationService>();
+builder.Services.AddScoped<IFlashcardProgressService, FlashcardProgressService>();
+builder.Services.AddScoped<IQuizProgressService, QuizProgressService>();
+builder.Services.AddScoped<ICourseProgressService, CourseProgressService>();
+builder.Services.AddScoped<IScheduleService, ScheduleService>();
+builder.Services.AddScoped<IIntervalService, IntervalService>();
+builder.Services.AddScoped<IScheduleContentService, ScheduleContentService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IPerformanceService, PerformanceService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ISystemService, SystemService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 // 80b1d727e3a30f8d8a54dd1c3b6744a7b30d6864
 

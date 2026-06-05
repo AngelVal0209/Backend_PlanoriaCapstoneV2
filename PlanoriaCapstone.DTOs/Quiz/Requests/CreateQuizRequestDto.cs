@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +10,7 @@ namespace PlanoriaCapstone.DTOs.Quiz.Requests
     {
         public string Title { get; set; }
         public string Description { get; set; }
-        public Guid CourseId { get; set; }
+        public int CourseId { get; set; }
         public decimal PassingScore { get; set; } = 70.00m;
         public int? TimeLimitMinutes { get; set; }
         public bool ShuffleQuestions { get; set; } = false;

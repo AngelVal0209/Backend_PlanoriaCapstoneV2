@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ namespace PlanoriaCapstone.DTOs.Flashcards.Decks.Requests
 {
     public class ShareDeckRequestDto
     {
-        public Guid UserId { get; set; }
+        public int UserId { get; set; }
         public string Permission { get; set; }
     }
 }

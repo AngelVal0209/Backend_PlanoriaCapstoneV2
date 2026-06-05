@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +12,7 @@ namespace PlanoriaCapstone.DTOs.Notifications.Requests
         public string Title { get; set; }
         public string Message { get; set; }
         public string RelatedEntityType { get; set; }
-        public Guid? RelatedEntityId { get; set; }
+        public int? RelatedEntityId { get; set; }
         public DateTime? ScheduledFor { get; set; }
     }
 }

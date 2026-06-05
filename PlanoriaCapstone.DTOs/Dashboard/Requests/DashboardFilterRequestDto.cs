@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,7 +15,7 @@ namespace PlanoriaCapstone.DTOs.Dashboard.Requests
     public class DashboardFilterRequestDto
     {
         public DateRange DateRange { get; set; }
-        public List<Guid> CourseIds { get; set; }
+        public List<int> CourseIds { get; set; }
         public bool IncludeArchived { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,10 +8,10 @@ namespace PlanoriaCapstone.DTOs.Flashcards.Decks.Responses
 {
     public class DeckResponseDto
     {
-        public Guid Id { get; set; }
+        public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public Guid CourseId { get; set; }
+        public int CourseId { get; set; }
         public string CourseName { get; set; }
         public int TotalCards { get; set; }
         public bool SpacedRepetitionEnabled { get; set; }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +12,7 @@ namespace PlanoriaCapstone.DTOs.System.Responses
         public string Level { get; set; }
         public string Message { get; set; }
         public string Context { get; set; }
-        public Guid? UserId { get; set; }
+        public int? UserId { get; set; }
         public string IpAddress { get; set; }
     }
 }
