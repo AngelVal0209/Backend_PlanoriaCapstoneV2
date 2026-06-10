@@ -62,4 +62,12 @@ public class FileUploadRepository : IFileUploadRepository
         await _context.SaveChangesAsync();
         return content;
     }
+
+    // ✅ NUEVO MÉTODO
+    public async Task<GeneratedContent> UpdateGeneratedContentAsync(GeneratedContent content)
+    {
+        _context.GeneratedContents.Update(content);
+        await _context.SaveChangesAsync();
+        return content;
+    }
 }

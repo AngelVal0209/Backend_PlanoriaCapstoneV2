@@ -11,4 +11,5 @@ public interface IFileUploadRepository
     Task<bool> DeleteAsync(int id);
     Task<GeneratedContent?> GetGeneratedContentAsync(int fileUploadId);
     Task<GeneratedContent> CreateGeneratedContentAsync(GeneratedContent content);
+    Task<GeneratedContent> UpdateGeneratedContentAsync(GeneratedContent content);  // ✅ NUEVO
 }

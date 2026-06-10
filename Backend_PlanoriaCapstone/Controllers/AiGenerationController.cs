@@ -51,7 +51,7 @@ namespace Backend_PlanoriaCapstone.Controllers
         public async Task<IActionResult> SetConfig([FromBody] AIConfigRequestDto request)
         {
             await _aiService.SetConfigAsync(request);
-            return Ok();
+            return Ok(new { message = "Configuración guardada" });
         }
 
         [HttpGet("config")]
@@ -104,6 +104,8 @@ namespace Backend_PlanoriaCapstone.Controllers
         public async Task<IActionResult> GetGeneratedContent(int id)
         {
             var result = await _aiService.GetGeneratedContentAsync(id);
+            if (result == null)
+                return NotFound();
             return Ok(result);
         }
 
