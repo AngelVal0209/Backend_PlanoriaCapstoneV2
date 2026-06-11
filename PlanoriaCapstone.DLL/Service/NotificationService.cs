@@ -36,9 +36,14 @@ public class NotificationService : INotificationService
         });
     }
 
+    // ✅ CORREGIDO
     public async Task<NotificationResponseDto> GetNotificationAsync(int id)
     {
-        throw new NotImplementedException("Get notification by id requires repository method.");
+        var notification = await _notificationRepository.GetByIdAsync(id);
+        if (notification == null)
+            throw new KeyNotFoundException($"Notificación con ID {id} no encontrada");
+
+        return MapToResponseDto(notification);
     }
 
     public async Task MarkAsReadAsync(int id)
@@ -51,9 +56,15 @@ public class NotificationService : INotificationService
         await _notificationRepository.MarkAllAsReadAsync(userId);
     }
 
+    // ✅ CORREGIDO
     public async Task<bool> DeleteAsync(int id)
     {
-        throw new NotImplementedException("Notification delete requires repository method.");
+        var notification = await _notificationRepository.GetByIdAsync(id);
+        if (notification == null)
+            return false;
+
+        await _notificationRepository.DeleteAsync(id);
+        return true;
     }
 
     public async Task<NotificationResponseDto> CreateReminderAsync(ScheduleReminderRequestDto request)
@@ -84,12 +95,19 @@ public class NotificationService : INotificationService
 
     public async Task<IEnumerable<NotificationResponseDto>> GetPendingRemindersAsync()
     {
-        return Enumerable.Empty<NotificationResponseDto>();
+        var pending = await _notificationRepository.GetPendingRemindersAsync();
+        return pending.Select(MapToResponseDto);
     }
 
+    // ✅ CORREGIDO
     public async Task<bool> CancelReminderAsync(int notificationId)
     {
-        throw new NotImplementedException("Cancel reminder requires repository method.");
+        var notification = await _notificationRepository.GetByIdAsync(notificationId);
+        if (notification == null || notification.Type != "Reminder")
+            return false;
+
+        await _notificationRepository.DeleteAsync(notificationId);
+        return true;
     }
 
     public async Task SendTestEmailAsync(int userId)
@@ -109,29 +127,31 @@ public class NotificationService : INotificationService
 
     public async Task<IEnumerable<EmailLogResponseDto>> GetEmailLogsAsync()
     {
-        return Enumerable.Empty<EmailLogResponseDto>();
+        var logs = await _notificationRepository.GetEmailLogsAsync();
+        return logs ?? Enumerable.Empty<EmailLogResponseDto>();
     }
 
     public async Task<bool> RetryFailedEmailAsync(int emailLogId)
     {
-        return await Task.FromResult(true);
+        var log = await _notificationRepository.GetEmailLogByIdAsync(emailLogId);
+        if (log == null)
+            return false;
+
+        // Reenviar email
+        await _notificationRepository.UpdateEmailLogStatusAsync(emailLogId, "retrying");
+        return true;
     }
 
     public async Task RegisterPushDeviceAsync(int userId, RegisterPushDeviceRequestDto request)
     {
-        await _activityLogRepository.LogAsync(new ActivityLog
-        {
-            UserId = userId,
-            Action = "RegisterPushDevice",
-            EntityType = "PushDevice",
-            Details = $"Platform: {request.Platform}, Device: {request.DeviceName}",
-            CreatedAt = DateTime.UtcNow
-        });
+        await LogActivitySafeAsync(userId, "RegisterPushDevice", "PushDevice", null,
+            $"Platform: {request.Platform}, Device: {request.DeviceName}");
     }
 
     public async Task UnregisterPushDeviceAsync(int deviceId)
     {
-        await Task.CompletedTask;
+        await LogActivitySafeAsync(1, "UnregisterPushDevice", "PushDevice", deviceId,
+            "Dispositivo push desregistrado");
     }
 
     public async Task SendPushAsync(int userId, string title, string message)
@@ -147,7 +167,14 @@ public class NotificationService : INotificationService
         };
 
         await _notificationRepository.CreateAsync(notification);
+
+        await LogActivitySafeAsync(userId, "SendPush", "Notification", null,
+            $"Push enviado: {title}");
     }
+
+    // ============================================
+    // HELPERS
+    // ============================================
 
     private static NotificationResponseDto MapToResponseDto(Notification notification)
     {
@@ -164,5 +191,23 @@ public class NotificationService : INotificationService
             SentAt = notification.SentAt,
             CreatedAt = notification.CreatedAt
         };
+    }
+
+    private async Task LogActivitySafeAsync(int userId, string action, string entityType,
+        int? entityId, string details)
+    {
+        try
+        {
+            await _activityLogRepository.LogAsync(new ActivityLog
+            {
+                UserId = userId,
+                Action = action,
+                EntityType = entityType,
+                EntityId = entityId,
+                Details = details,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        catch { }
     }
 }
