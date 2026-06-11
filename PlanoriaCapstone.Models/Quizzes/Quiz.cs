@@ -12,6 +12,7 @@ public class Quiz
     public bool ShuffleQuestions { get; set; }
     public bool ShuffleOptions { get; set; }
     public int AttemptsAllowed { get; set; }
+    public bool IsActive { get; set; } = true;  
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

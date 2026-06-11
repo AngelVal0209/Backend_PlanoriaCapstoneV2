@@ -49,15 +49,8 @@ public class QuizAttemptService : IQuizAttemptService
 
         var created = await _attemptRepository.CreateAsync(attempt);
 
-        await _activityLogRepository.LogAsync(new ActivityLog
-        {
-            UserId = userId,
-            Action = "StartQuizAttempt",
-            EntityType = "QuizAttempt",
-            EntityId = created.Id,
-            Details = $"Inicio intento de quiz ID {request.QuizId}",
-            CreatedAt = DateTime.UtcNow
-        });
+        await LogActivitySafeAsync(userId, "StartQuizAttempt", "QuizAttempt", created.Id,
+            $"Inicio intento de quiz ID {request.QuizId}");
 
         return MapToAttemptResponse(created);
     }
@@ -71,42 +64,41 @@ public class QuizAttemptService : IQuizAttemptService
         if (attempt.CompletedAt != null)
             throw new InvalidOperationException("Este intento ya ha sido completado");
 
+        // ✅ Cargar quiz con preguntas y opciones para poder calificar
+        var quiz = await _quizRepository.GetByIdAsync(attempt.QuizId);
+        if (quiz == null)
+            throw new KeyNotFoundException("Quiz no encontrado");
+
         // Save all provided answers
         if (request.Answers != null)
         {
             foreach (var answerDto in request.Answers)
             {
-            var existingAnswers = await _attemptRepository.GetAnswersByAttemptAsync(request.AttemptId);
-            var existing = existingAnswers.FirstOrDefault(a => a.QuestionId == answerDto.QuestionId);
+                var question = quiz.QuizQuestions?.FirstOrDefault(q => q.Id == answerDto.QuestionId);
 
-            if (existing != null)
-            {
-                existing.SelectedOptionId = answerDto.SelectedOptionId;
-                existing.ShortAnswerText = answerDto.ShortAnswerText;
-                existing.AnsweredAt = DateTime.UtcNow;
-                await _attemptRepository.UpdateAsync(attempt);
-            }
-            else
-            {
-                await _attemptRepository.AddAnswerAsync(new QuizAnswer
+                var answer = new QuizAnswer
                 {
                     AttemptId = request.AttemptId,
                     QuestionId = answerDto.QuestionId,
                     SelectedOptionId = answerDto.SelectedOptionId,
                     ShortAnswerText = answerDto.ShortAnswerText,
-                    IsCorrect = false,
-                    PointsEarned = 0,
                     AnsweredAt = DateTime.UtcNow
-                });
+                };
+
+                // ✅ CALIFICAR inmediatamente
+                GradeSingleAnswer(answer, question);
+
+                await _attemptRepository.AddAnswerAsync(answer);
             }
         }
-        }
 
-        await AutoGradeAsync(request.AttemptId);
+        // ✅ Recalcular score
+        await RecalculateScoreAsync(request.AttemptId, quiz);
 
+        // Recargar intento
         attempt = await _attemptRepository.GetByIdAsync(request.AttemptId);
         if (attempt == null)
-            throw new KeyNotFoundException($"Intento con ID {request.AttemptId} no encontrado después de guardar");
+            throw new KeyNotFoundException("Intento no encontrado después de guardar");
 
         attempt.CompletedAt = DateTime.UtcNow;
         attempt.TimeSpentSeconds = (int)(DateTime.UtcNow - attempt.StartedAt).TotalSeconds;
@@ -114,15 +106,8 @@ public class QuizAttemptService : IQuizAttemptService
 
         await UpdateUserProgress(userId, attempt.QuizId);
 
-        await _activityLogRepository.LogAsync(new ActivityLog
-        {
-            UserId = userId,
-            Action = "SubmitQuizAttempt",
-            EntityType = "QuizAttempt",
-            EntityId = attempt.Id,
-            Details = $"Intento de quiz completado. Score: {attempt.ScorePercentage}%",
-            CreatedAt = DateTime.UtcNow
-        });
+        await LogActivitySafeAsync(userId, "SubmitQuizAttempt", "QuizAttempt", attempt.Id,
+            $"Intento completado. Score: {attempt.ScorePercentage}%");
 
         return await BuildResultAsync(attempt);
     }
@@ -157,31 +142,20 @@ public class QuizAttemptService : IQuizAttemptService
         if (attempt.CompletedAt != null)
             throw new InvalidOperationException("Este intento ya ha sido completado");
 
-        var existingAnswers = await _attemptRepository.GetAnswersByAttemptAsync(request.AttemptId);
-        var existing = existingAnswers.FirstOrDefault(a => a.QuestionId == request.QuestionId);
+        var quiz = await _quizRepository.GetByIdAsync(attempt.QuizId);
+        var question = quiz?.QuizQuestions?.FirstOrDefault(q => q.Id == request.QuestionId);
 
-        if (existing != null)
+        var answer = new QuizAnswer
         {
-            existing.SelectedOptionId = request.SelectedOptionId;
-            existing.ShortAnswerText = request.ShortAnswerText;
-            existing.AnsweredAt = DateTime.UtcNow;
-            GradeSingleAnswer(existing);
-        }
-        else
-        {
-            var answer = new QuizAnswer
-            {
-                AttemptId = request.AttemptId,
-                QuestionId = request.QuestionId,
-                SelectedOptionId = request.SelectedOptionId,
-                ShortAnswerText = request.ShortAnswerText,
-                IsCorrect = false,
-                PointsEarned = 0,
-                AnsweredAt = DateTime.UtcNow
-            };
-            GradeSingleAnswer(answer);
-            await _attemptRepository.AddAnswerAsync(answer);
-        }
+            AttemptId = request.AttemptId,
+            QuestionId = request.QuestionId,
+            SelectedOptionId = request.SelectedOptionId,
+            ShortAnswerText = request.ShortAnswerText,
+            AnsweredAt = DateTime.UtcNow
+        };
+
+        GradeSingleAnswer(answer, question);
+        await _attemptRepository.AddAnswerAsync(answer);
     }
 
     public async Task UpdateAnswerAsync(int userId, SubmitAnswerRequestDto request)
@@ -193,12 +167,17 @@ public class QuizAttemptService : IQuizAttemptService
         var answers = await _attemptRepository.GetAnswersByAttemptAsync(request.AttemptId);
         var answer = answers.FirstOrDefault(a => a.QuestionId == request.QuestionId);
         if (answer == null)
-            throw new KeyNotFoundException("Respuesta no encontrada para esta pregunta");
+            throw new KeyNotFoundException("Respuesta no encontrada");
+
+        var quiz = await _quizRepository.GetByIdAsync(attempt.QuizId);
+        var question = quiz?.QuizQuestions?.FirstOrDefault(q => q.Id == request.QuestionId);
 
         answer.SelectedOptionId = request.SelectedOptionId;
         answer.ShortAnswerText = request.ShortAnswerText;
         answer.AnsweredAt = DateTime.UtcNow;
-        GradeSingleAnswer(answer);
+
+        GradeSingleAnswer(answer, question);
+        await _attemptRepository.UpdateAsync(attempt);
     }
 
     public async Task BulkSaveAnswersAsync(int userId, List<SubmitAnswerRequestDto> request)
@@ -210,34 +189,12 @@ public class QuizAttemptService : IQuizAttemptService
     public async Task AutoGradeAsync(int attemptId)
     {
         var attempt = await _attemptRepository.GetByIdAsync(attemptId);
-        if (attempt == null)
-            throw new KeyNotFoundException($"Intento con ID {attemptId} no encontrado");
+        if (attempt == null) return;
 
         var quiz = await _quizRepository.GetByIdAsync(attempt.QuizId);
-        if (quiz == null)
-            throw new KeyNotFoundException("Quiz no encontrado");
+        if (quiz == null) return;
 
-        var answers = await _attemptRepository.GetAnswersByAttemptAsync(attemptId);
-
-        decimal totalPoints = 0;
-        int correctCount = 0;
-
-        foreach (var answer in answers)
-        {
-            GradeSingleAnswer(answer);
-
-            if (answer.IsCorrect)
-                correctCount++;
-            totalPoints += answer.PointsEarned;
-        }
-
-        var allQuestions = quiz.QuizQuestions ?? new List<QuizQuestion>();
-        decimal maxPoints = allQuestions.Sum(q => q.Points);
-        var score = maxPoints > 0 ? Math.Round(totalPoints / maxPoints * 100, 2) : 0;
-
-        attempt.ScorePercentage = score;
-        attempt.Passed = score >= quiz.PassingScore;
-        await _attemptRepository.UpdateAsync(attempt);
+        await RecalculateScoreAsync(attemptId, quiz);
     }
 
     public async Task RegradeAsync(int attemptId)
@@ -268,7 +225,7 @@ public class QuizAttemptService : IQuizAttemptService
 
         var best = attempts.FirstOrDefault();
         if (best == null)
-            throw new KeyNotFoundException("No se encontraron intentos completados para este quiz");
+            throw new KeyNotFoundException("No se encontraron intentos completados");
 
         return MapToAttemptResponse(best);
     }
@@ -293,17 +250,66 @@ public class QuizAttemptService : IQuizAttemptService
         };
     }
 
-    private void GradeSingleAnswer(QuizAnswer answer)
+    // ============================================
+    // ✅ CALIFICACIÓN CORREGIDA
+    // ============================================
+
+    /// <summary>
+    /// Califica una respuesta individual comparando con la opción correcta
+    /// </summary>
+    private void GradeSingleAnswer(QuizAnswer answer, QuizQuestion? question)
     {
-        // For MCQ: compare selected option to correct option
-        if (answer.SelectedOptionId.HasValue)
+        if (question == null)
         {
-            // We need the question to know the correct option
-            // This is called after the answer is retrieved with navigation
-            // If navigation isn't loaded, we can't grade here directly
-            // The full grading happens in AutoGradeAsync
+            answer.IsCorrect = false;
+            answer.PointsEarned = 0;
+            return;
+        }
+
+        var correctOption = question.QuizOptions?.FirstOrDefault(o => o.IsCorrect);
+
+        if (correctOption != null && answer.SelectedOptionId.HasValue)
+        {
+            answer.IsCorrect = answer.SelectedOptionId.Value == correctOption.Id;
+            answer.PointsEarned = answer.IsCorrect ? question.Points : 0;
+        }
+        else
+        {
+            answer.IsCorrect = false;
+            answer.PointsEarned = 0;
         }
     }
+
+    /// <summary>
+    /// Recalcula el score total del intento
+    /// </summary>
+    private async Task RecalculateScoreAsync(int attemptId, Quiz quiz)
+    {
+        var attempt = await _attemptRepository.GetByIdAsync(attemptId);
+        if (attempt == null) return;
+
+        var answers = await _attemptRepository.GetAnswersByAttemptAsync(attemptId);
+
+        // Recalificar todas las respuestas
+        foreach (var answer in answers)
+        {
+            var question = quiz.QuizQuestions?.FirstOrDefault(q => q.Id == answer.QuestionId);
+            GradeSingleAnswer(answer, question);
+        }
+
+        decimal totalPoints = answers.Sum(a => a.PointsEarned);
+        decimal maxPoints = (quiz.QuizQuestions ?? new List<QuizQuestion>()).Sum(q => q.Points);
+
+        attempt.ScorePercentage = maxPoints > 0 ? Math.Round(totalPoints / maxPoints * 100, 2) : 0;
+        attempt.Passed = attempt.ScorePercentage >= quiz.PassingScore;
+        attempt.CorrectAnswersCount = answers.Count(a => a.IsCorrect);
+
+        await _attemptRepository.UpdateAsync(attempt);
+    }
+
+    // ============================================
+    // PROGRESO
+    // ============================================
 
     private async Task UpdateUserProgress(int userId, int quizId)
     {
@@ -340,6 +346,10 @@ public class QuizAttemptService : IQuizAttemptService
         await _progressRepository.CreateOrUpdateAsync(progress);
     }
 
+    // ============================================
+    // BUILD RESULT
+    // ============================================
+
     private async Task<QuizResultResponseDto> BuildResultAsync(QuizAttempt attempt)
     {
         var answers = await _attemptRepository.GetAnswersByAttemptAsync(attempt.Id);
@@ -354,13 +364,12 @@ public class QuizAttemptService : IQuizAttemptService
             var selectedOption = question?.QuizOptions?.FirstOrDefault(o => o.Id == answer.SelectedOptionId);
             var correctOption = question?.QuizOptions?.FirstOrDefault(o => o.IsCorrect);
 
-            if (answer.IsCorrect)
-                correctCount++;
+            if (answer.IsCorrect) correctCount++;
 
             answerDtos.Add(new AnswerResponseDto
             {
                 QuestionId = answer.QuestionId,
-                QuestionText = question?.QuestionText,
+                QuestionText = question?.QuestionText ?? "",
                 SelectedOption = selectedOption != null ? new OptionResponseDto
                 {
                     Id = selectedOption.Id,
@@ -368,7 +377,7 @@ public class QuizAttemptService : IQuizAttemptService
                     IsCorrect = selectedOption.IsCorrect,
                     OrderPosition = selectedOption.OrderPosition
                 } : null,
-                ShortAnswerText = answer.ShortAnswerText,
+                ShortAnswerText = answer.ShortAnswerText ?? "",
                 IsCorrect = answer.IsCorrect,
                 PointsEarned = answer.PointsEarned,
                 CorrectAnswer = correctOption != null ? new OptionResponseDto
@@ -395,20 +404,46 @@ public class QuizAttemptService : IQuizAttemptService
         };
     }
 
+    // ============================================
+    // MAPEO
+    // ============================================
+
     private QuizAttemptResponseDto MapToAttemptResponse(QuizAttempt attempt)
     {
         return new QuizAttemptResponseDto
         {
             Id = attempt.Id,
             QuizId = attempt.QuizId,
-            QuizTitle = attempt.Quiz?.Title,
+            QuizTitle = attempt.Quiz?.Title ?? "",
             StartedAt = attempt.StartedAt,
             CompletedAt = attempt.CompletedAt,
-            ScorePercentage = attempt.ScorePercentage,
-            Passed = attempt.Passed,
-            TimeSpentSeconds = attempt.TimeSpentSeconds,
+            ScorePercentage = attempt.ScorePercentage ?? 0,
+            Passed = attempt.Passed ?? false,
+            TimeSpentSeconds = attempt.TimeSpentSeconds ?? 0,
             AnswersCount = attempt.QuizAnswers?.Count ?? 0,
             CorrectAnswersCount = attempt.QuizAnswers?.Count(a => a.IsCorrect) ?? 0
         };
+    }
+
+    // ============================================
+    // LOG
+    // ============================================
+
+    private async Task LogActivitySafeAsync(int userId, string action, string entityType,
+        int? entityId, string details)
+    {
+        try
+        {
+            await _activityLogRepository.LogAsync(new ActivityLog
+            {
+                UserId = userId,
+                Action = action,
+                EntityType = entityType,
+                EntityId = entityId,
+                Details = details,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        catch { }
     }
 }

@@ -34,13 +34,13 @@ public class QuizService : IQuizService
     public async Task<IEnumerable<QuizListResponseDto>> GetByCourseIdAsync(int courseId)
     {
         var quizzes = await _quizRepository.GetByCourseIdAsync(courseId);
-        return quizzes.Select(q => MapToListResponse(q));
+        return quizzes.Select(MapToListResponse);
     }
 
     public async Task<IEnumerable<QuizListResponseDto>> GetAllAsync()
     {
         var quizzes = await _quizRepository.GetAllAsync();
-        return quizzes.Select(q => MapToListResponse(q));
+        return quizzes.Select(MapToListResponse);
     }
 
     public async Task<QuizResponseDto> CreateAsync(int userId, CreateQuizRequestDto request)
@@ -62,15 +62,8 @@ public class QuizService : IQuizService
 
         var created = await _quizRepository.CreateAsync(quiz);
 
-        await _activityLogRepository.LogAsync(new ActivityLog
-        {
-            UserId = userId,
-            Action = "CreateQuiz",
-            EntityType = "Quiz",
-            EntityId = created.Id,
-            Details = $"Quiz '{created.Title}' creado",
-            CreatedAt = DateTime.UtcNow
-        });
+        await LogActivitySafeAsync(userId, "CreateQuiz", "Quiz", created.Id,
+            $"Quiz '{created.Title}' creado");
 
         return MapToResponse(created);
     }
@@ -81,18 +74,14 @@ public class QuizService : IQuizService
         if (quiz == null)
             throw new KeyNotFoundException($"Quiz con ID {id} no encontrado");
 
-        quiz.Title = request.Title ?? quiz.Title;
-        quiz.Description = request.Description ?? quiz.Description;
-        if (request.PassingScore.HasValue)
-            quiz.PassingScore = request.PassingScore.Value;
-        if (request.TimeLimitMinutes.HasValue)
-            quiz.TimeLimitMinutes = request.TimeLimitMinutes;
-        if (request.ShuffleQuestions.HasValue)
-            quiz.ShuffleQuestions = request.ShuffleQuestions.Value;
-        if (request.ShuffleOptions.HasValue)
-            quiz.ShuffleOptions = request.ShuffleOptions.Value;
-        if (request.AttemptsAllowed.HasValue)
-            quiz.AttemptsAllowed = request.AttemptsAllowed.Value;
+        if (request.Title != null) quiz.Title = request.Title;
+        if (request.Description != null) quiz.Description = request.Description;
+        if (request.PassingScore.HasValue) quiz.PassingScore = request.PassingScore.Value;
+        if (request.TimeLimitMinutes.HasValue) quiz.TimeLimitMinutes = request.TimeLimitMinutes;
+        if (request.ShuffleQuestions.HasValue) quiz.ShuffleQuestions = request.ShuffleQuestions.Value;
+        if (request.ShuffleOptions.HasValue) quiz.ShuffleOptions = request.ShuffleOptions.Value;
+        if (request.AttemptsAllowed.HasValue) quiz.AttemptsAllowed = request.AttemptsAllowed.Value;
+        if (request.IsActive.HasValue) quiz.IsActive = request.IsActive.Value;
         quiz.UpdatedAt = DateTime.UtcNow;
 
         var updated = await _quizRepository.UpdateAsync(quiz);
@@ -146,6 +135,10 @@ public class QuizService : IQuizService
         return MapToResponse(created);
     }
 
+    // ============================================
+    // ✅ PREGUNTAS - CORREGIDO
+    // ============================================
+
     public async Task<IEnumerable<QuestionResponseDto>> GetQuestionsAsync(int quizId)
     {
         var quiz = await _quizRepository.GetByIdAsync(quizId);
@@ -163,6 +156,7 @@ public class QuizService : IQuizService
         if (quiz == null)
             throw new KeyNotFoundException($"Quiz con ID {quizId} no encontrado");
 
+        // Crear pregunta directamente
         var question = new QuizQuestion
         {
             QuizId = quizId,
@@ -172,23 +166,30 @@ public class QuizService : IQuizService
             Points = request.Points,
             OrderPosition = request.OrderPosition,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            QuizOptions = request.Options?.Select(o => new QuizOption
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        // Guardar pregunta
+        question = await _quizRepository.AddQuestionAsync(question);
+
+        // Guardar opciones
+        if (request.Options != null && request.Options.Any())
+        {
+            question.QuizOptions = request.Options.Select(o => new QuizOption
             {
+                QuestionId = question.Id,
                 OptionText = o.OptionText,
                 IsCorrect = o.IsCorrect,
                 OrderPosition = o.OrderPosition,
                 CreatedAt = DateTime.UtcNow
-            }).ToList()
-        };
+            }).ToList();
+        }
 
-        if (quiz.QuizQuestions == null)
-            quiz.QuizQuestions = new List<QuizQuestion>();
-        quiz.QuizQuestions.Add(question);
-        quiz.TotalQuestions = quiz.QuizQuestions.Count;
-        quiz.UpdatedAt = DateTime.UtcNow;
-
-        await _quizRepository.UpdateAsync(quiz);
+        // Actualizar total de preguntas
+        var updatedQuiz = await _quizRepository.GetByIdAsync(quizId);
+        updatedQuiz!.TotalQuestions = (updatedQuiz.QuizQuestions?.Count ?? 0);
+        updatedQuiz.UpdatedAt = DateTime.UtcNow;
+        await _quizRepository.UpdateAsync(updatedQuiz);
 
         return MapToQuestionResponse(question);
     }
@@ -200,12 +201,11 @@ public class QuizService : IQuizService
         if (question == null)
             throw new KeyNotFoundException($"Pregunta con ID {questionId} no encontrada");
 
-        question.QuestionText = request.QuestionText ?? question.QuestionText;
-        question.Explanation = request.Explanation ?? question.Explanation;
-        if (request.Points.HasValue)
-            question.Points = request.Points.Value;
-        if (request.OrderPosition.HasValue)
-            question.OrderPosition = request.OrderPosition.Value;
+        if (request.QuestionText != null) question.QuestionText = request.QuestionText;
+        if (request.Explanation != null) question.Explanation = request.Explanation;
+        if (request.Points.HasValue) question.Points = request.Points.Value;
+        if (request.OrderPosition.HasValue) question.OrderPosition = request.OrderPosition.Value;
+        //if (request.IsActive.HasValue) question.IsActive = request.IsActive.Value;
         question.UpdatedAt = DateTime.UtcNow;
 
         if (request.Options != null)
@@ -229,12 +229,10 @@ public class QuizService : IQuizService
     public async Task<bool> DeleteQuestionAsync(int questionId)
     {
         var quiz = await FindQuizByQuestionId(questionId);
-        if (quiz.QuizQuestions == null)
-            return false;
+        if (quiz.QuizQuestions == null) return false;
 
         var question = quiz.QuizQuestions.FirstOrDefault(q => q.Id == questionId);
-        if (question == null)
-            return false;
+        if (question == null) return false;
 
         quiz.QuizQuestions.Remove(question);
         quiz.TotalQuestions = quiz.QuizQuestions.Count;
@@ -262,6 +260,10 @@ public class QuizService : IQuizService
         quiz.UpdatedAt = DateTime.UtcNow;
         await _quizRepository.UpdateAsync(quiz);
     }
+
+    // ============================================
+    // ✅ OPCIONES - CORREGIDO
+    // ============================================
 
     public async Task<OptionResponseDto> CreateOptionAsync(int questionId, CreateOptionRequestDto request)
     {
@@ -295,11 +297,9 @@ public class QuizService : IQuizService
         if (option == null)
             throw new KeyNotFoundException($"Opción con ID {optionId} no encontrada");
 
-        option.OptionText = request.OptionText ?? option.OptionText;
-        if (request.IsCorrect.HasValue)
-            option.IsCorrect = request.IsCorrect.Value;
-        if (request.OrderPosition.HasValue)
-            option.OrderPosition = request.OrderPosition.Value;
+        if (request.OptionText != null) option.OptionText = request.OptionText;
+        if (request.IsCorrect.HasValue) option.IsCorrect = request.IsCorrect.Value;
+        if (request.OrderPosition.HasValue) option.OrderPosition = request.OrderPosition.Value;
 
         quiz.UpdatedAt = DateTime.UtcNow;
         await _quizRepository.UpdateAsync(quiz);
@@ -310,8 +310,7 @@ public class QuizService : IQuizService
     public async Task<bool> DeleteOptionAsync(int optionId)
     {
         var (quiz, option) = await FindQuizAndOption(optionId);
-        if (option == null)
-            return false;
+        if (option == null) return false;
 
         var question = quiz.QuizQuestions?.FirstOrDefault(q =>
             q.QuizOptions != null && q.QuizOptions.Any(o => o.Id == optionId));
@@ -322,14 +321,16 @@ public class QuizService : IQuizService
         return true;
     }
 
+    // ============================================
+    // SETTINGS
+    // ============================================
+
     public async Task UpdateSettingsAsync(int quizId, object settings)
     {
         var quiz = await _quizRepository.GetByIdAsync(quizId);
         if (quiz == null)
             throw new KeyNotFoundException($"Quiz con ID {quizId} no encontrado");
 
-        // Settings are handled as a dynamic object from the controller
-        // applying partial updates to quiz properties
         quiz.UpdatedAt = DateTime.UtcNow;
         await _quizRepository.UpdateAsync(quiz);
     }
@@ -428,7 +429,6 @@ public class QuizService : IQuizService
                 q.QuestionText,
                 q.QuestionType,
                 q.Points,
-                q.OrderPosition,
                 Options = quiz.ShuffleOptions
                     ? (q.QuizOptions ?? new List<QuizOption>())
                         .OrderBy(_ => rng.Next())
@@ -440,6 +440,10 @@ public class QuizService : IQuizService
         };
     }
 
+    // ============================================
+    // MÉTODOS PRIVADOS
+    // ============================================
+
     private async Task<Quiz> FindQuizByQuestionId(int questionId)
     {
         var quizzes = await _quizRepository.GetAllAsync();
@@ -447,7 +451,7 @@ public class QuizService : IQuizService
             q.QuizQuestions != null && q.QuizQuestions.Any(qq => qq.Id == questionId));
 
         if (quiz == null)
-            throw new KeyNotFoundException($"Pregunta con ID {questionId} no encontrada en ningún quiz");
+            throw new KeyNotFoundException($"Pregunta con ID {questionId} no encontrada");
 
         return quiz;
     }
@@ -465,6 +469,23 @@ public class QuizService : IQuizService
                 return (quiz, option);
         }
         return (null!, null);
+    }
+
+    private async Task LogActivitySafeAsync(int userId, string action, string entityType, int? entityId, string details)
+    {
+        try
+        {
+            await _activityLogRepository.LogAsync(new ActivityLog
+            {
+                UserId = userId,
+                Action = action,
+                EntityType = entityType,
+                EntityId = entityId,
+                Details = details,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        catch { }
     }
 
     private QuizResponseDto MapToResponse(Quiz quiz)
@@ -509,8 +530,8 @@ public class QuizService : IQuizService
         return new QuestionResponseDto
         {
             Id = question.Id,
-            QuestionText = question.QuestionText,
-            QuestionType = question.QuestionType,
+            QuestionText = question.QuestionText ?? string.Empty,
+            QuestionType = question.QuestionType ?? "multiple_choice",
             Explanation = question.Explanation,
             Points = question.Points,
             OrderPosition = question.OrderPosition,

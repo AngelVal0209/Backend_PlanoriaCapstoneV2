@@ -38,6 +38,9 @@ builder.Services.AddScoped<IFileUploadRepository, FileUploadRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IStudyScheduleRepository, StudyScheduleRepository>();
 builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+builder.Services.AddScoped<IFlashcardDeckService, FlashcardDeckService>();
+builder.Services.AddScoped<IFlashcardService, FlashcardService>();
+builder.Services.AddScoped<IQuizService, QuizService>();
 
 // BLL SERVICES
 builder.Services.AddScoped<IAuthService, AuthService>();

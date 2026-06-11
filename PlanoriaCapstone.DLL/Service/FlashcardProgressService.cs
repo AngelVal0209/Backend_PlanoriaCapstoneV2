@@ -31,8 +31,9 @@ public class FlashcardProgressService : IFlashcardProgressService
     {
         var progress = await _progressRepository.GetByUserAndDeckAsync(userId, deckId);
         var deck = await _deckRepository.GetByIdAsync(deckId);
+        var totalCards = (await _flashcardRepository.GetByDeckIdAsync(deckId)).Count();
 
-        return MapToProgressDto(progress, deck?.Name ?? "Unknown");
+        return MapToProgressDto(progress, deck?.Name ?? "Unknown", totalCards);
     }
 
     public async Task<IEnumerable<FlashcardProgressResponseDto>> GetByCourseAsync(int userId, int courseId)
@@ -43,7 +44,8 @@ public class FlashcardProgressService : IFlashcardProgressService
         foreach (var deck in decks)
         {
             var progress = await _progressRepository.GetByUserAndDeckAsync(userId, deck.Id);
-            result.Add(MapToProgressDto(progress, deck.Name));
+            var totalCards = (await _flashcardRepository.GetByDeckIdAsync(deck.Id)).Count();
+            result.Add(MapToProgressDto(progress, deck.Name, totalCards));
         }
 
         return result;
@@ -57,7 +59,8 @@ public class FlashcardProgressService : IFlashcardProgressService
         foreach (var progress in allProgress)
         {
             var deck = await _deckRepository.GetByIdAsync(progress.DeckId);
-            result.Add(MapToProgressDto(progress, deck?.Name ?? "Unknown"));
+            var totalCards = (await _flashcardRepository.GetByDeckIdAsync(progress.DeckId)).Count();
+            result.Add(MapToProgressDto(progress, deck?.Name ?? "Unknown", totalCards));
         }
 
         return result;
@@ -88,12 +91,12 @@ public class FlashcardProgressService : IFlashcardProgressService
 
         return new MasteryTrendResponseDto
         {
-            Dates = new List<DateTime> { now.AddDays(-6), now.AddDays(-5), now.AddDays(-4), now.AddDays(-3), now.AddDays(-2), now.AddDays(-1), now },
-            MasteryScores = new List<decimal> { 0, 0, 0, 0, 0, 0, progress?.AverageEaseFactor ?? 0 },
-            NewCards = new List<int> { 0, 0, 0, 0, 0, 0, 0 },
-            LearnedCards = new List<int> { 0, 0, 0, 0, 0, 0, 0 },
-            MasteredCards = new List<int> { 0, 0, 0, 0, 0, 0, progress?.CardsMastered ?? 0 },
-            ReviewDueCards = new List<int> { 0, 0, 0, 0, 0, 0, progress?.CardsInLearning ?? 0 }
+            Dates = Enumerable.Range(0, 7).Select(i => now.AddDays(-6 + i).Date).ToList(),
+            MasteryScores = Enumerable.Range(0, 7).Select(i => i == 6 ? progress?.AverageEaseFactor ?? 0 : 0m).ToList(),
+            NewCards = Enumerable.Range(0, 7).Select(_ => 0).ToList(),
+            LearnedCards = Enumerable.Range(0, 7).Select(_ => 0).ToList(),
+            MasteredCards = Enumerable.Range(0, 7).Select(i => i == 6 ? progress?.CardsMastered ?? 0 : 0).ToList(),
+            ReviewDueCards = Enumerable.Range(0, 7).Select(i => i == 6 ? progress?.CardsInLearning ?? 0 : 0).ToList()
         };
     }
 
@@ -101,12 +104,15 @@ public class FlashcardProgressService : IFlashcardProgressService
     {
         var progress = await _progressRepository.GetByUserAndDeckAsync(userId, deckId);
         var deck = await _deckRepository.GetByIdAsync(deckId);
+        var totalCards = (await _flashcardRepository.GetByDeckIdAsync(deckId)).Count();
 
         return new
         {
             EstimatedMasteryDate = DateTime.UtcNow.AddDays(14),
-            ProjectedMasteryPercentage = progress?.CardsMastered > 0 ? Math.Min(100, progress.CardsMastered * 100 / Math.Max(1, deck?.TotalCards ?? 1)) : 0,
-            CardsToReviewPerDay = Math.Max(1, (deck?.TotalCards ?? 0) - (progress?.CardsMastered ?? 0)) / 14,
+            ProjectedMasteryPercentage = progress?.CardsMastered > 0
+                ? Math.Min(100, progress.CardsMastered * 100 / Math.Max(1, totalCards))
+                : 0,
+            CardsToReviewPerDay = Math.Max(1, totalCards - (progress?.CardsMastered ?? 0)) / 14,
             ConfidenceLevel = progress?.AverageEaseFactor ?? 2.50m
         };
     }
@@ -159,18 +165,29 @@ public class FlashcardProgressService : IFlashcardProgressService
         };
     }
 
-    private static FlashcardProgressResponseDto MapToProgressDto(UserProgressFlashcard? progress, string deckName)
+    // ============================================
+    // ✅ MAPEO CORREGIDO
+    // ============================================
+
+    private static FlashcardProgressResponseDto MapToProgressDto(UserProgressFlashcard? progress, string deckName, int totalCards)
     {
+        int mastered = progress?.CardsMastered ?? 0;
+        int learning = progress?.CardsInLearning ?? 0;
+        int studied = progress?.TotalReviews ?? 0;
+        int notStarted = Math.Max(0, totalCards - studied);
+
         return new FlashcardProgressResponseDto
         {
             DeckId = progress?.DeckId ?? 0,
             DeckName = deckName,
-            TotalCards = 0,
-            StudiedCount = progress?.TotalStudySessions ?? 0,
-            MasteredCount = progress?.CardsMastered ?? 0,
-            LearningCount = progress?.CardsInLearning ?? 0,
-            NotStartedCount = 0,
-            MasteryPercentage = progress?.CardsMastered > 0 ? Math.Min(100, progress.CardsMastered * 100 / Math.Max(1, progress.CardsMastered + progress.CardsInLearning)) : 0,
+            TotalCards = totalCards,
+            StudiedCount = studied,
+            MasteredCount = mastered,
+            LearningCount = learning,
+            NotStartedCount = notStarted,
+            MasteryPercentage = totalCards > 0
+                ? Math.Min(100, mastered * 100m / totalCards)
+                : 0,
             LastStudiedAt = progress?.LastStudiedAt
         };
     }

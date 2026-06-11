@@ -10,6 +10,9 @@ public class QuizAttempt
     public decimal? ScorePercentage { get; set; }
     public bool? Passed { get; set; }
     public int? TimeSpentSeconds { get; set; }
+
+    public int CorrectAnswersCount { get; set; } = 0;
+
     public DateTime CreatedAt { get; set; }
 
     public User? User { get; set; }

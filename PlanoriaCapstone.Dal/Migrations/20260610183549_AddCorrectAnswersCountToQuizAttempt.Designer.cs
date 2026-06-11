@@ -12,8 +12,8 @@ using PlanoriaCapstone.Dal;
 namespace PlanoriaCapstone.Dal.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260605125923_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260610183549_AddCorrectAnswersCountToQuizAttempt")]
+    partial class AddCorrectAnswersCountToQuizAttempt
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -544,6 +544,9 @@ namespace PlanoriaCapstone.Dal.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<decimal>("PassingScore")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(5, 2)
@@ -640,6 +643,9 @@ namespace PlanoriaCapstone.Dal.Migrations
 
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("CorrectAnswersCount")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
