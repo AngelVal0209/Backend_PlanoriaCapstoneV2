@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PlanoriaCapstone.DTOs\PlanoriaCapstone.DTOs.csproj" />
     <ProjectReference Include="..\PlanoriaCapstone.Models\PlanoriaCapstone.Models.csproj" />
   </ItemGroup>
 

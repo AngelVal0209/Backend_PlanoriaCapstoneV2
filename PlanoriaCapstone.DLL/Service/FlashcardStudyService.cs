@@ -318,11 +318,40 @@ public class FlashcardStudyService : IFlashcardStudyService
 
         var nextReview = DateTime.UtcNow.Date.AddDays(interval);
 
+        // ✅ CORREGIDO: Usar la última sesión activa o crear una virtual
+        var lastSession = await _context.FlashcardStudySessions
+            .Where(s => s.UserId == userId && s.DeckId == card.DeckId)
+            .OrderByDescending(s => s.StartedAt)
+            .FirstOrDefaultAsync();
+
+        int sessionId;
+        if (lastSession != null)
+        {
+            sessionId = lastSession.Id;
+        }
+        else
+        {
+            // Crear una sesión virtual para la revisión programada
+            var session = new FlashcardStudySession
+            {
+                UserId = userId,
+                DeckId = card.DeckId,
+                SessionType = "repeat_failed",
+                StartedAt = DateTime.UtcNow,
+                CardsReviewed = 0,
+                CardsKnown = 0,
+                CardsUnknown = 0
+            };
+            _context.FlashcardStudySessions.Add(session);
+            await _context.SaveChangesAsync();
+            sessionId = session.Id;
+        }
+
         var review = new FlashcardReview
         {
             FlashcardId = request.FlashcardId,
             UserId = userId,
-            SessionId = 0,
+            SessionId = sessionId,  // ✅ Ahora usa una sesión real
             KnewIt = true,
             EaseFactor = easeFactor,
             IntervalDays = interval,
@@ -331,6 +360,21 @@ public class FlashcardStudyService : IFlashcardStudyService
         };
 
         await _flashcardRepo.AddReviewAsync(review);
+
+        // Log seguro
+        try
+        {
+            await _logRepo.LogAsync(new ActivityLog
+            {
+                UserId = userId,
+                Action = "ScheduleReview",
+                EntityType = "Flashcard",
+                EntityId = request.FlashcardId,
+                Details = $"Revisión programada para {nextReview:yyyy-MM-dd}",
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        catch { }
     }
 
     public async Task<IEnumerable<StudySessionResponseDto>> GetSessionHistoryAsync(int userId, int? deckId)
