@@ -35,6 +35,15 @@ namespace Backend_PlanoriaCapstone.Controllers
             var result = await _deckService.GetByIdAsync(id);
             return Ok(result);
         }
+        [HttpGet("my")]
+        public async Task<IActionResult> GetMyDecks()
+        {
+            var userId = User.ObtenerUserId();
+            if (userId == null) return Unauthorized();
+
+            var result = await _deckService.GetByUserIdAsync(userId.Value);
+            return Ok(result);
+        }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateDeckRequestDto request)

@@ -9,6 +9,7 @@ public interface IFlashcardDeckService
 {
     Task<DeckResponseDto> GetByIdAsync(int id);
     Task<IEnumerable<DeckListResponseDto>> GetByCourseIdAsync(int courseId);
+    Task<IEnumerable<DeckListResponseDto>> GetByUserIdAsync(int userId);
     Task<DeckResponseDto> CreateAsync(int userId, CreateDeckRequestDto request);
     Task<DeckResponseDto> UpdateAsync(int id, UpdateDeckRequestDto request);
     Task<bool> DeleteAsync(int id);

@@ -35,7 +35,11 @@ public class FlashcardDeckService : IFlashcardDeckService
 
         return await MapToDeckDto(deck);
     }
-
+    public async Task<IEnumerable<DeckListResponseDto>> GetByUserIdAsync(int userId)
+    {
+        var decks = await _deckRepo.GetByUserIdAsync(userId);
+        return decks.Select(MapToListDto);
+    }
     public async Task<IEnumerable<DeckListResponseDto>> GetByCourseIdAsync(int courseId)
     {
         var decks = await _deckRepo.GetByCourseIdAsync(courseId);
@@ -272,6 +276,20 @@ public class FlashcardDeckService : IFlashcardDeckService
             NextReviewDate = null,
             RepetitionCount = 0,
             EaseFactor = 2.5m
+        };
+    }
+    private static DeckListResponseDto MapToListDto(FlashcardDeck deck)
+    {
+        return new DeckListResponseDto
+        {
+            Id = deck.Id,
+            Name = deck.Name,
+            CourseName = deck.Course?.Name ?? "",       // ✅ NUEVO
+            ColorHex = deck.Course?.ColorHex ?? "#3498db", // ✅ NUEVO
+            TotalCards = deck.TotalCards,
+            MasteredPercentage = 0,
+            LastStudiedAt = null,
+            DueCardsCount = 0
         };
     }
 }
