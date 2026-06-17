@@ -8,6 +8,7 @@ using PlanoriaCapstone.DTOs.Flashcards.Decks.Requests;
 using PlanoriaCapstone.DTOs.Flashcards.Cards.Requests;
 using PlanoriaCapstone.DTOs.Quiz.Requests;
 using PlanoriaCapstone.Models;
+using UglyToad.PdfPig;
 
 namespace PlanoriaCapstone.Bll.Service;
 
@@ -74,18 +75,9 @@ public class AiGenerationService : IAiGenerationService
         await LogActivitySafeAsync(userId, "GenerateFlashcards", "GeneratedContent", content.Id,
             $"Generación de flashcards desde archivo ID {request.FileId}");
 
-        try
-        {
-            await ProcessFlashcardGenerationAsync(content.Id, request.TargetCourseId,
-                request.NumberOfItems, request.Difficulty ?? "medium",
-                request.Language ?? "es", userId);
-        }
-        catch (Exception ex)
-        {
-            await LogActivitySafeAsync(userId, "GenerateFlashcards_Error", "GeneratedContent", content.Id,
-                $"Error: {ex.Message}");
-            throw;
-        }
+        await ProcessFlashcardGenerationAsync(content.Id, request.TargetCourseId,
+            request.NumberOfItems, request.Difficulty ?? "medium",
+            request.Language ?? "es", userId);
 
         var updatedContent = await FindGeneratedContentByIdAsync(content.Id);
 
@@ -132,18 +124,9 @@ public class AiGenerationService : IAiGenerationService
         await LogActivitySafeAsync(userId, "GenerateQuiz", "GeneratedContent", content.Id,
             $"Generación de quiz desde archivo ID {request.FileId}");
 
-        try
-        {
-            await ProcessQuizGenerationAsync(content.Id, request.TargetCourseId,
-                request.NumberOfItems, request.Difficulty ?? "medium",
-                request.Language ?? "es", userId);
-        }
-        catch (Exception ex)
-        {
-            await LogActivitySafeAsync(userId, "GenerateQuiz_Error", "GeneratedContent", content.Id,
-                $"Error: {ex.Message}");
-            throw;
-        }
+        await ProcessQuizGenerationAsync(content.Id, request.TargetCourseId,
+            request.NumberOfItems, request.Difficulty ?? "medium",
+            request.Language ?? "es", userId);
 
         var updatedContent = await FindGeneratedContentByIdAsync(content.Id);
 
@@ -205,11 +188,11 @@ public class AiGenerationService : IAiGenerationService
             {
                 return Task.FromResult(new AIConfigResponseDto
                 {
-                    Provider = _configuration["AI:Provider"] ?? "deepseek",
-                    Model = _configuration["AI:Model"] ?? "deepseek-chat",
+                    Provider = GetProvider(),
+                    Model = GetModel(),
                     MaxTokens = 2000,
                     Temperature = 0.7m,
-                    IsActive = false,
+                    IsActive = !string.IsNullOrEmpty(GetApiKey()),
                     LastUsedAt = null
                 });
             }
@@ -220,7 +203,7 @@ public class AiGenerationService : IAiGenerationService
                 Model = _currentConfig.Model,
                 MaxTokens = _currentConfig.MaxTokens,
                 Temperature = _currentConfig.Temperature,
-                IsActive = true,
+                IsActive = !string.IsNullOrEmpty(_currentConfig.ApiKey),
                 LastUsedAt = DateTime.UtcNow
             });
         }
@@ -232,30 +215,19 @@ public class AiGenerationService : IAiGenerationService
         string provider = GetProvider();
 
         if (string.IsNullOrEmpty(apiKey))
-        {
-            await LogActivitySafeAsync(1, "TestAiConnection", "System", null,
-                "API Key no configurada - usando modo simulación");
-            return; // No lanzar error
-        }
+            throw new InvalidOperationException("API Key no configurada. Usa PUT /api/ai/config");
 
-        try
-        {
-            string testPrompt = "Responde solo: OK";
+        string testPrompt = "Responde solo: OK";
 
-            if (provider == "deepseek")
-                await CallDeepSeekApiAsync(testPrompt, apiKey);
-            else
-                await CallGeminiApiInternalAsync(testPrompt, apiKey, GetModel());
-
-            await LogActivitySafeAsync(1, "TestAiConnection", "System", null,
-                $"Conexión a {provider} exitosa");
-        }
-        catch (Exception ex)
+        string response = provider switch
         {
-            // No fallar, solo registrar
-            await LogActivitySafeAsync(1, "TestAiConnection", "System", null,
-                $"Conexión fallida ({provider}): {ex.Message}. Usando modo simulación.");
-        }
+            "groq" => await CallGroqApiAsync(testPrompt, apiKey, GetModel()),
+            "deepseek" => await CallDeepSeekApiAsync(testPrompt, apiKey),
+            _ => await CallGeminiApiAsync(testPrompt, apiKey, GetModel())
+        };
+
+        await LogActivitySafeAsync(1, "TestAiConnection", "System", null,
+            $"Conexión a {provider} exitosa");
     }
 
     // ============================================
@@ -277,9 +249,7 @@ public class AiGenerationService : IAiGenerationService
         });
 
         await _fileUploadRepository.UpdateGeneratedContentAsync(generated);
-
-        await LogActivitySafeAsync(1, "RegenerateContent", "GeneratedContent", generated.Id,
-            "Regeneración de contenido solicitada");
+        await LogActivitySafeAsync(1, "RegenerateContent", "GeneratedContent", generated.Id, "Regeneración solicitada");
 
         return new GenerationResponseDto
         {
@@ -304,11 +274,7 @@ public class AiGenerationService : IAiGenerationService
         if (generated == null)
             throw new KeyNotFoundException($"Contenido generado con ID {generatedContentId} no encontrado");
 
-        generated.GenerationConfig = System.Text.Json.JsonSerializer.Serialize(new
-        {
-            difficulty = newDifficulty
-        });
-
+        generated.GenerationConfig = System.Text.Json.JsonSerializer.Serialize(new { difficulty = newDifficulty });
         await _fileUploadRepository.UpdateGeneratedContentAsync(generated);
 
         return new GenerationResponseDto
@@ -375,7 +341,6 @@ public class AiGenerationService : IAiGenerationService
     public async Task<bool> DeleteHistoryAsync(int id)
     {
         _generatedIndex.TryRemove(id, out _);
-
         if (_generatedIndex.TryGetValue(id, out var entry))
         {
             var file = await _fileUploadRepository.GetByIdAsync(entry.FileUploadId);
@@ -390,12 +355,11 @@ public class AiGenerationService : IAiGenerationService
                 }
             }
         }
-
         return false;
     }
 
     // ============================================
-    // PROCESAMIENTO REAL DE GENERACIÓN
+    // PROCESAMIENTO REAL
     // ============================================
 
     private async Task ProcessFlashcardGenerationAsync(int generatedContentId, int courseId,
@@ -428,7 +392,7 @@ public class AiGenerationService : IAiGenerationService
         int position = 1;
         foreach (var card in flashcards)
         {
-            var cardRequest = new CreateFlashcardRequestDto
+            await _flashcardService.CreateAsync(new CreateFlashcardRequestDto
             {
                 Question = card.Question,
                 Answer = card.Answer,
@@ -437,15 +401,14 @@ public class AiGenerationService : IAiGenerationService
                 Tags = card.Tags ?? new List<string>(),
                 DeckId = deck.Id,
                 Position = position++
-            };
-            await _flashcardService.CreateAsync(cardRequest);
+            });
         }
 
         generated.GeneratedEntityId = deck.Id;
         await _fileUploadRepository.UpdateGeneratedContentAsync(generated);
 
         await LogActivitySafeAsync(userId, "GenerateFlashcards_Completed", "GeneratedContent",
-            generatedContentId, $"Flashcards generadas. Deck ID: {deck.Id}, Cards: {flashcards.Count}");
+            generatedContentId, $"Deck ID: {deck.Id}, Cards: {flashcards.Count}");
     }
 
     private async Task ProcessQuizGenerationAsync(int generatedContentId, int courseId,
@@ -496,7 +459,7 @@ public class AiGenerationService : IAiGenerationService
                 }
             }
 
-            var questionRequest = new CreateQuestionRequestDto
+            await _quizService.CreateQuestionAsync(quiz.Id, new CreateQuestionRequestDto
             {
                 QuestionText = question.QuestionText,
                 QuestionType = question.QuestionType ?? "multiple_choice",
@@ -504,20 +467,18 @@ public class AiGenerationService : IAiGenerationService
                 Points = 1.00m,
                 OrderPosition = questionPosition++,
                 Options = options
-            };
-
-            await _quizService.CreateQuestionAsync(quiz.Id, questionRequest);
+            });
         }
 
         generated.GeneratedEntityId = quiz.Id;
         await _fileUploadRepository.UpdateGeneratedContentAsync(generated);
 
         await LogActivitySafeAsync(userId, "GenerateQuiz_Completed", "GeneratedContent",
-            generatedContentId, $"Quiz generado. Quiz ID: {quiz.Id}, Questions: {quizQuestions.Count}");
+            generatedContentId, $"Quiz ID: {quiz.Id}, Questions: {quizQuestions.Count}");
     }
 
     // ============================================
-    // EXTRACCIÓN DE TEXTO
+    // EXTRACCIÓN DE TEXTO DEL PDF
     // ============================================
 
     private async Task<string> ExtractTextFromFileAsync(FileUpload file)
@@ -527,16 +488,35 @@ public class AiGenerationService : IAiGenerationService
             if (!string.IsNullOrEmpty(file.FilePath) && File.Exists(file.FilePath))
             {
                 string extension = Path.GetExtension(file.FilePath).ToLower();
-                if (extension == ".txt")
-                    return await File.ReadAllTextAsync(file.FilePath);
+
+                if (extension == ".pdf")
+                {
+                    using var pdf = PdfDocument.Open(file.FilePath);
+                    var pages = pdf.GetPages().ToList();
+                    var text = string.Join("\n", pages.Select(p => p.Text));
+
+                    if (text.Length > 30000)
+                        text = text.Substring(0, 30000) + "\n\n[Contenido truncado - se procesaron las primeras páginas]";
+
+                    return string.IsNullOrWhiteSpace(text)
+                        ? $"Archivo PDF: {file.OriginalFilename}. Genera contenido sobre este tema."
+                        : text;
+                }
+                else if (extension == ".txt")
+                {
+                    var text = await File.ReadAllTextAsync(file.FilePath);
+                    if (text.Length > 30000)
+                        text = text.Substring(0, 30000) + "\n\n[Contenido truncado]";
+                    return text;
+                }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            await LogActivitySafeAsync(1, "ExtractTextError", "File", file.Id, $"Error: {ex.Message}");
+        }
 
-        return $"Archivo: {file.OriginalFilename}\n" +
-               $"Tipo: {file.FileType}\n" +
-               $"Tamaño: {file.FileSizeBytes} bytes\n\n" +
-               $"Genera contenido educativo basado en el nombre y tipo de este archivo.";
+        return $"Archivo: {file.OriginalFilename}\nGenera contenido educativo basado en este archivo.";
     }
 
     // ============================================
@@ -545,7 +525,7 @@ public class AiGenerationService : IAiGenerationService
 
     private string BuildFlashcardPrompt(string content, int numberOfItems, string difficulty, string language)
     {
-        return $@"Eres un profesor experto. Crea {numberOfItems} flashcards educativas.
+        return $@"Eres un profesor experto. Crea {numberOfItems} flashcards educativas basadas EXCLUSIVAMENTE en el siguiente contenido.
 
 CONTENIDO:
 {content}
@@ -553,10 +533,10 @@ CONTENIDO:
 REQUISITOS:
 - Dificultad: {difficulty} | Idioma: {language}
 - Exactamente {numberOfItems} flashcards
-- Preguntas claras y respuestas concisas
+- Preguntas claras y respuestas concisas basadas en el contenido
 - Incluye pistas y etiquetas
 
-IMPORTANTE: Devuelve SOLO un array JSON válido:
+IMPORTANTE: Devuelve SOLO un array JSON válido, sin texto adicional:
 [
   {{
     ""question"": ""pregunta"",
@@ -570,7 +550,7 @@ IMPORTANTE: Devuelve SOLO un array JSON válido:
 
     private string BuildQuizPrompt(string content, int numberOfItems, string difficulty, string language)
     {
-        return $@"Eres un profesor experto. Crea {numberOfItems} preguntas de opción múltiple.
+        return $@"Eres un profesor experto. Crea {numberOfItems} preguntas de opción múltiple basadas EXCLUSIVAMENTE en el siguiente contenido.
 
 CONTENIDO:
 {content}
@@ -578,9 +558,9 @@ CONTENIDO:
 REQUISITOS:
 - Dificultad: {difficulty} | Idioma: {language}
 - 4 opciones por pregunta, solo una correcta
-- Incluye explicación
+- Incluye explicación de la respuesta correcta
 
-IMPORTANTE: Devuelve SOLO un array JSON válido:
+IMPORTANTE: Devuelve SOLO un array JSON válido, sin texto adicional:
 [
   {{
     ""questionText"": ""pregunta"",
@@ -597,7 +577,7 @@ IMPORTANTE: Devuelve SOLO un array JSON válido:
     }
 
     // ============================================
-    // LLAMADA A IA (DEEPSEEK + GEMINI + FALLBACK)
+    // LLAMADA A IA (GROQ + GEMINI + DEEPSEEK)
     // ============================================
 
     private async Task<string> CallAIApiAsync(string prompt)
@@ -606,32 +586,25 @@ IMPORTANTE: Devuelve SOLO un array JSON válido:
         string provider = GetProvider();
 
         if (string.IsNullOrEmpty(apiKey))
-            return GetSimulatedResponse(prompt);
+            throw new InvalidOperationException("API Key no configurada. Usa PUT /api/ai/config");
 
-        try
+        return provider switch
         {
-            if (provider == "deepseek")
-                return await CallDeepSeekApiAsync(prompt, apiKey);
-            else
-                return await CallGeminiApiInternalAsync(prompt, apiKey, GetModel());
-        }
-        catch (Exception ex)
-        {
-            // Si falla la IA real, usar simulación como fallback
-            await LogActivitySafeAsync(1, "AIApiFallback", "System", null,
-                $"Usando simulación. Error: {ex.Message}");
-            return GetSimulatedResponse(prompt);
-        }
+            "groq" => await CallGroqApiAsync(prompt, apiKey, GetModel()),
+            "deepseek" => await CallDeepSeekApiAsync(prompt, apiKey),
+            _ => await CallGeminiApiAsync(prompt, apiKey, GetModel())
+        };
     }
 
-    private async Task<string> CallDeepSeekApiAsync(string prompt, string apiKey)
+    // ✅ NUEVO: Groq API
+    private async Task<string> CallGroqApiAsync(string prompt, string apiKey, string model)
     {
         using var httpClient = new HttpClient();
         httpClient.Timeout = TimeSpan.FromSeconds(60);
 
         var requestBody = new
         {
-            model = "deepseek-chat",
+            model = model,
             messages = new[]
             {
                 new { role = "user", content = prompt }
@@ -644,21 +617,21 @@ IMPORTANTE: Devuelve SOLO un array JSON válido:
         var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
         httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 
-        var response = await httpClient.PostAsync("https://api.deepseek.com/v1/chat/completions", content);
+        var response = await httpClient.PostAsync("https://api.groq.com/openai/v1/chat/completions", content);
         var responseJson = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Error DeepSeek API ({response.StatusCode}): {responseJson}");
+            throw new InvalidOperationException($"Error Groq API ({response.StatusCode}): {responseJson}");
 
         using var doc = System.Text.Json.JsonDocument.Parse(responseJson);
         return doc.RootElement
             .GetProperty("choices")[0]
             .GetProperty("message")
             .GetProperty("content")
-            .GetString() ?? "";
+            .GetString() ?? throw new InvalidOperationException("Groq devolvió respuesta vacía");
     }
 
-    private async Task<string> CallGeminiApiInternalAsync(string prompt, string apiKey, string model)
+    private async Task<string> CallGeminiApiAsync(string prompt, string apiKey, string model)
     {
         using var httpClient = new HttpClient();
         httpClient.Timeout = TimeSpan.FromSeconds(60);
@@ -688,40 +661,68 @@ IMPORTANTE: Devuelve SOLO un array JSON válido:
             .GetString() ?? "";
     }
 
-    private string GetSimulatedResponse(string prompt)
+    private async Task<string> CallDeepSeekApiAsync(string prompt, string apiKey)
     {
-        if (prompt.Contains("opción múltiple"))
+        using var httpClient = new HttpClient();
+        httpClient.Timeout = TimeSpan.FromSeconds(60);
+
+        var requestBody = new
         {
-            return @"[
-  {
-    ""questionText"": ""¿Qué es una variable en álgebra?"",
-    ""questionType"": ""multiple_choice"",
-    ""explanation"": ""Una variable es un símbolo que representa un valor desconocido."",
-    ""options"": [
-      { ""optionText"": ""Un número fijo"", ""isCorrect"": false },
-      { ""optionText"": ""Un símbolo que representa un valor desconocido"", ""isCorrect"": true },
-      { ""optionText"": ""Una operación matemática"", ""isCorrect"": false },
-      { ""optionText"": ""Un resultado final"", ""isCorrect"": false }
-    ]
-  }
-]";
-        }
-        else
-        {
-            return @"[
-  {
-    ""question"": ""¿Qué es una variable?"",
-    ""answer"": ""Símbolo que representa un valor desconocido."",
-    ""hint"": ""Piensa en x, y, z"",
-    ""difficulty"": ""easy"",
-    ""tags"": [""álgebra"", ""variables""]
-  }
-]";
-        }
+            model = "deepseek-chat",
+            messages = new[] { new { role = "user", content = prompt } },
+            temperature = 0.7,
+            max_tokens = 2000
+        };
+
+        var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+        var response = await httpClient.PostAsync("https://api.deepseek.com/v1/chat/completions", content);
+        var responseJson = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"Error DeepSeek API ({response.StatusCode}): {responseJson}");
+
+        using var doc = System.Text.Json.JsonDocument.Parse(responseJson);
+        return doc.RootElement
+            .GetProperty("choices")[0]
+            .GetProperty("message")
+            .GetProperty("content")
+            .GetString() ?? "";
     }
 
     // ============================================
-    // HELPERS DE CONFIGURACIÓN
+    // PARSEO
+    // ============================================
+
+    private List<FlashcardFromAI> ParseFlashcardsFromAIResponse(string aiResponse)
+    {
+        string cleanJson = ExtractJsonFromResponse(aiResponse);
+        var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        return System.Text.Json.JsonSerializer.Deserialize<List<FlashcardFromAI>>(cleanJson, options)
+               ?? new List<FlashcardFromAI>();
+    }
+
+    private List<QuizQuestionFromAI> ParseQuizFromAIResponse(string aiResponse)
+    {
+        string cleanJson = ExtractJsonFromResponse(aiResponse);
+        var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        return System.Text.Json.JsonSerializer.Deserialize<List<QuizQuestionFromAI>>(cleanJson, options)
+               ?? new List<QuizQuestionFromAI>();
+    }
+
+    private string ExtractJsonFromResponse(string response)
+    {
+        var startIndex = response.IndexOf('[');
+        var endIndex = response.LastIndexOf(']') + 1;
+        if (startIndex >= 0 && endIndex > startIndex)
+            return response.Substring(startIndex, endIndex - startIndex);
+        return response;
+    }
+
+    // ============================================
+    // HELPERS
     // ============================================
 
     private string GetApiKey()
@@ -741,7 +742,7 @@ IMPORTANTE: Devuelve SOLO un array JSON válido:
             if (_configLoaded && _currentConfig != null && !string.IsNullOrEmpty(_currentConfig.Provider))
                 return _currentConfig.Provider.ToLower();
         }
-        return _configuration["AI:Provider"] ?? "deepseek";
+        return _configuration["AI:Provider"] ?? "groq";
     }
 
     private string GetModel()
@@ -751,55 +752,8 @@ IMPORTANTE: Devuelve SOLO un array JSON válido:
             if (_configLoaded && _currentConfig != null && !string.IsNullOrEmpty(_currentConfig.Model))
                 return _currentConfig.Model;
         }
-        return _configuration["AI:Model"] ?? "deepseek-chat";
+        return _configuration["AI:Model"] ?? "llama-3.1-70b-versatile";
     }
-
-    // ============================================
-    // PARSEO
-    // ============================================
-
-    private List<FlashcardFromAI> ParseFlashcardsFromAIResponse(string aiResponse)
-    {
-        try
-        {
-            string cleanJson = ExtractJsonFromResponse(aiResponse);
-            var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            return System.Text.Json.JsonSerializer.Deserialize<List<FlashcardFromAI>>(cleanJson, options)
-                   ?? new List<FlashcardFromAI>();
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Error al parsear flashcards: {ex.Message}");
-        }
-    }
-
-    private List<QuizQuestionFromAI> ParseQuizFromAIResponse(string aiResponse)
-    {
-        try
-        {
-            string cleanJson = ExtractJsonFromResponse(aiResponse);
-            var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            return System.Text.Json.JsonSerializer.Deserialize<List<QuizQuestionFromAI>>(cleanJson, options)
-                   ?? new List<QuizQuestionFromAI>();
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Error al parsear quiz: {ex.Message}");
-        }
-    }
-
-    private string ExtractJsonFromResponse(string response)
-    {
-        var startIndex = response.IndexOf('[');
-        var endIndex = response.LastIndexOf(']') + 1;
-        if (startIndex >= 0 && endIndex > startIndex)
-            return response.Substring(startIndex, endIndex - startIndex);
-        return response;
-    }
-
-    // ============================================
-    // LOG
-    // ============================================
 
     private async Task LogActivitySafeAsync(int userId, string action, string entityType,
         int? entityId, string details)
@@ -818,10 +772,6 @@ IMPORTANTE: Devuelve SOLO un array JSON válido:
         }
         catch { }
     }
-
-    // ============================================
-    // BÚSQUEDA Y MAPEO
-    // ============================================
 
     private async Task<GeneratedContent?> FindGeneratedContentByIdAsync(int id)
     {
